@@ -1,0 +1,14 @@
+[package]
+name = "memcached"
+version = "0.1.0"
+authors = ["liangyongrui <leungyongrui@gmail.com>"]
+edition = "2018"
+description = "async memcached rust client"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/liangyongrui/memcached"
+readme = "readme.md"
+keywords = ['memcached']
+categories = ['memcached']
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
