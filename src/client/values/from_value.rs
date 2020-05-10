@@ -2,7 +2,7 @@ use crate::Result;
 use std::str::FromStr;
 /// determine how the value is unserialize to memcached
 pub trait FromMemcachedValue: Sized {
-    fn from_memcached_value(value:Vec<u8>, flags:u32) -> Result<Self>;
+    fn from_memcached_value(value: Vec<u8>, flags: u32) -> Result<Self>;
 }
 
 pub trait FromMemcachedValueExt: Sized {
