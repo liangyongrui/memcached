@@ -1,5 +1,8 @@
 use crate::stream::Stream;
-use crate::Result;
+use crate::{
+    error::{CommandError, MemcachedError, ServerError},
+    Result,
+};
 use async_std::io::Cursor;
 
 const OK_STATUS: u16 = 0x0;
@@ -72,7 +75,7 @@ impl PacketHeader {
     pub async fn read(reader: &mut Stream) -> Result<PacketHeader> {
         let magic = reader.read_u8().await?;
         if magic != Magic::Response as u8 {
-            return Err(anyhow!("BadMagic:{}", magic));
+            return Err(ServerError::BadMagic(magic))?;
         }
         Ok(PacketHeader {
             magic,
@@ -102,7 +105,7 @@ impl Response {
         if status == OK_STATUS {
             Ok(self)
         } else {
-            Err(anyhow!("CommandError::{}", status))
+            Err(CommandError::from(status))?
         }
     }
 }
@@ -131,9 +134,9 @@ pub async fn parse_response(reader: &mut Stream) -> Result<Response> {
     })
 }
 
-// pub fn parse_cas_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcacheError> {
+// pub fn parse_cas_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcachedError> {
 //     match parse_response(reader)?.err() {
-//         Err(MemcacheError::CommandError(e))
+//         Err(MemcachedError::CommandError(e))
 //             if e == CommandError::KeyNotFound || e == CommandError::KeyExists =>
 //         {
 //             Ok(false)
@@ -159,7 +162,7 @@ pub async fn parse_get_response(reader: &mut Stream) -> Result<Option<Response>>
 // pub fn parse_gets_response<R: io::Read, V: FromMemcacheValueExt>(
 //     reader: &mut R,
 //     max_responses: usize,
-// ) -> Result<HashMap<String, V>, MemcacheError> {
+// ) -> Result<HashMap<String, V>, MemcachedError> {
 //     let mut result = HashMap::new();
 //     for _ in 0..=max_responses {
 //         let Response {
@@ -183,30 +186,30 @@ pub async fn parse_get_response(reader: &mut Stream) -> Result<Option<Response>>
 //     )))?
 // }
 
-// pub fn parse_delete_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcacheError> {
+// pub fn parse_delete_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcachedError> {
 //     match parse_response(reader)?.err() {
 //         Ok(_) => Ok(true),
-//         Err(MemcacheError::CommandError(CommandError::KeyNotFound)) => Ok(false),
+//         Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(false),
 //         Err(e) => Err(e),
 //     }
 // }
 
-// pub fn parse_counter_response<R: io::Read>(reader: &mut R) -> Result<u64, MemcacheError> {
+// pub fn parse_counter_response<R: io::Read>(reader: &mut R) -> Result<u64, MemcachedError> {
 //     let Response { value, .. } = parse_response(reader)?.err()?;
 //     Ok(Cursor::new(value).read_u64::<BigEndian>()?)
 // }
 
-// pub fn parse_touch_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcacheError> {
+// pub fn parse_touch_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcachedError> {
 //     match parse_response(reader)?.err() {
 //         Ok(_) => Ok(true),
-//         Err(MemcacheError::CommandError(CommandError::KeyNotFound)) => Ok(false),
+//         Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(false),
 //         Err(e) => Err(e),
 //     }
 // }
 
 // pub fn parse_stats_response<R: io::Read>(
 //     reader: &mut R,
-// ) -> Result<HashMap<String, String>, MemcacheError> {
+// ) -> Result<HashMap<String, String>, MemcachedError> {
 //     let mut result = HashMap::new();
 //     loop {
 //         let Response { key, value, .. } = parse_response(reader)?.err()?;
@@ -220,6 +223,6 @@ pub async fn parse_get_response(reader: &mut Stream) -> Result<Option<Response>>
 //     Ok(result)
 // }
 
-// pub fn parse_start_auth_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcacheError> {
+// pub fn parse_start_auth_response<R: io::Read>(reader: &mut R) -> Result<bool, MemcachedError> {
 //     parse_response(reader)?.err().map(|_| true)
 // }

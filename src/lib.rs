@@ -48,10 +48,11 @@ extern crate anyhow;
 
 mod client;
 mod connection;
+pub mod error;
 mod protocol;
 mod stream;
 
-pub use anyhow::Result;
+pub type Result<T> = std::result::Result<T, error::MemcachedError>;
 pub use client::{connectable::Connectable, Client};
 /// Create a memcached client instance and connect to memcached server.
 pub async fn connect(url: &str) -> Result<Client> {
@@ -61,7 +62,7 @@ pub async fn connect(url: &str) -> Result<Client> {
 #[cfg(test)]
 mod tests {
 
-    pub use anyhow::Result;
+    pub use crate::Result;
     #[async_std::test]
     async fn it_works() {
         let client = super::connect("memcache://127.0.0.1:12345").await.unwrap();
@@ -69,5 +70,6 @@ mod tests {
         client.set("123", "456", 100).await.unwrap();
         let get = client.get("123").await.unwrap();
         dbg!(version, get);
+        let _not = client.get("1234").await.unwrap();
     }
 }

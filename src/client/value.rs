@@ -1,5 +1,5 @@
 use crate::stream::Stream;
-use anyhow::Result;
+use crate::Result;
 use mobc::async_trait;
 
 pub enum Flags {

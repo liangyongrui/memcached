@@ -1,6 +1,6 @@
 use crate::protocol::BinaryProtocol;
 use crate::stream::Stream;
-use anyhow::Result;
+use crate::{error::MemcachedError, Result};
 use async_std::net::TcpStream;
 use mobc::{async_trait, Manager};
 use std::{
@@ -53,9 +53,9 @@ pub(crate) struct ConnectionManager {
 impl Manager for ConnectionManager {
     type Connection = Connection;
     /// The error type returned by `Connection`s.
-    type Error = anyhow::Error;
+    type Error = MemcachedError;
     /// Attempts to create a new connection.
-    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+    async fn connect(&self) -> std::result::Result<Self::Connection, Self::Error> {
         let url = &self.url;
         let connection = Connection::connect(url).await?;
         if url.has_authority() && !url.username().is_empty() && url.password().is_some() {
@@ -69,7 +69,7 @@ impl Manager for ConnectionManager {
     ///
     /// A standard implementation would check if a simple query like `SELECT 1`
     /// succeeds.
-    async fn check(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
+    async fn check(&self, mut conn: Self::Connection) -> std::result::Result<Self::Connection, Self::Error> {
         let _ = conn.version().await?;
         Ok(conn)
     }

@@ -3,8 +3,8 @@ mod client_hash;
 pub mod connectable;
 pub mod value;
 
+use crate::Result;
 use crate::{connection::ConnectionManager, protocol::binary_packet::Response};
-use anyhow::Result;
 use client_hash::default_hash_function;
 use mobc::Pool;
 use url::Url;
@@ -46,7 +46,7 @@ impl Client {
     pub async fn version(&self) -> Result<Vec<String>> {
         let mut result = Vec::with_capacity(self.connections.len());
         for connection in self.connections.iter() {
-            let mut connection = connection.get().await.map_err(|e| anyhow!(e))?;
+            let mut connection = connection.get().await?;
             result.push(connection.version().await?);
         }
         Ok(result)
@@ -55,12 +55,7 @@ impl Client {
     /// Flush all cache on memcached server immediately.
     pub async fn flush(&self) -> Result<()> {
         for connection in self.connections.iter() {
-            connection
-                .get()
-                .await
-                .map_err(|e| anyhow!(e))?
-                .flush()
-                .await?;
+            connection.get().await?.flush().await?;
         }
         Ok(())
     }
@@ -68,12 +63,7 @@ impl Client {
     /// Flush all cache on memcached server with a delay seconds.
     pub async fn flush_with_delay(&self, delay: u32) -> Result<()> {
         for connection in self.connections.iter() {
-            connection
-                .get()
-                .await
-                .map_err(|e| anyhow!(e))?
-                .flush_with_delay(delay)
-                .await?;
+            connection.get().await?.flush_with_delay(delay).await?;
         }
         Ok(())
     }
@@ -81,12 +71,7 @@ impl Client {
     /// Get a key from memcached server.
     pub async fn get(&self, key: &str) -> Result<Option<Response>> {
         check::check_key_len(key)?;
-        self.get_connection(key)
-            .get()
-            .await
-            .map_err(|e| anyhow!(e))?
-            .get(key)
-            .await
+        self.get_connection(key).get().await?.get(key).await
     }
 
     /// Set a key with associate value into memcached server with expiration seconds.
@@ -99,8 +84,7 @@ impl Client {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
-            .await
-            .map_err(|e| anyhow!(e))?
+            .await?
             .set(key, value, expiration)
             .await
     }
@@ -115,8 +99,7 @@ impl Client {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
-            .await
-            .map_err(|e| anyhow!(e))?
+            .await?
             .add(key, value, expiration)
             .await
     }
@@ -131,8 +114,7 @@ impl Client {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
-            .await
-            .map_err(|e| anyhow!(e))?
+            .await?
             .replace(key, value, expiration)
             .await
     }
