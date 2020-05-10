@@ -10,9 +10,9 @@ use std::{
 use url::Url;
 
 /// A connection to the memcached server
-pub struct Connection {
-    pub protocol: BinaryProtocol,
-    pub url: Arc<String>,
+pub(crate) struct Connection {
+    pub(crate) protocol: BinaryProtocol,
+    pub(crate) url: Arc<String>,
 }
 
 impl DerefMut for Connection {
@@ -44,9 +44,9 @@ impl Connection {
         })
     }
 }
-
+#[derive(Debug)]
 pub(crate) struct ConnectionManager {
-    pub url: Url,
+    pub(crate) url: Url,
 }
 
 #[async_trait]

@@ -57,7 +57,7 @@ impl fmt::Display for ServerError {
 }
 
 /// Command specific errors.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum CommandError {
     /// The client tried to set a key which already existed in the server.
     KeyExists,
@@ -269,10 +269,10 @@ impl error::Error for MemcachedError {
             #[cfg(feature = "tls")]
             MemcachedError::OpensslError(ref err) => err.source(),
             MemcachedError::ParseError(ref p) => p.source(),
-            MemcachedError::ClientError(_) => None,
-            MemcachedError::ServerError(_) => None,
-            MemcachedError::CommandError(_) => None,
-            MemcachedError::PoolError(_) => None,
+            MemcachedError::ClientError(_)
+            | MemcachedError::ServerError(_)
+            | MemcachedError::CommandError(_)
+            | MemcachedError::PoolError(_) => None,
         }
     }
 }

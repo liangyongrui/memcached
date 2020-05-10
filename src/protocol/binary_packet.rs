@@ -10,7 +10,7 @@ use std::{borrow::Cow, collections::HashMap, io::Cursor};
 const OK_STATUS: u16 = 0x0;
 
 #[allow(dead_code)]
-pub enum Opcode {
+pub(crate) enum Opcode {
     Get = 0x00,
     Set = 0x01,
     Add = 0x02,
@@ -29,39 +29,39 @@ pub enum Opcode {
     StartAuth = 0x21,
 }
 
-pub enum Magic {
+pub(crate) enum Magic {
     Request = 0x80,
     Response = 0x81,
 }
 
 #[derive(Debug, Default)]
-pub struct PacketHeader {
-    pub magic: u8,
-    pub opcode: u8,
-    pub key_length: u16,
-    pub extras_length: u8,
-    pub data_type: u8,
-    pub vbucket_id_or_status: u16,
-    pub total_body_length: u32,
-    pub opaque: u32,
-    pub cas: u64,
+pub(crate) struct PacketHeader {
+    pub(crate) magic: u8,
+    pub(crate) opcode: u8,
+    pub(crate) key_length: u16,
+    pub(crate) extras_length: u8,
+    pub(crate) data_type: u8,
+    pub(crate) vbucket_id_or_status: u16,
+    pub(crate) total_body_length: u32,
+    pub(crate) opaque: u32,
+    pub(crate) cas: u64,
 }
 
 #[derive(Debug)]
-pub struct StoreExtras {
-    pub flags: u32,
-    pub expiration: u32,
+pub(crate) struct StoreExtras {
+    pub(crate) flags: u32,
+    pub(crate) expiration: u32,
 }
 
 #[derive(Debug)]
-pub struct CounterExtras {
-    pub amount: u64,
-    pub initial_value: u64,
-    pub expiration: u32,
+pub(crate) struct CounterExtras {
+    pub(crate) amount: u64,
+    pub(crate) initial_value: u64,
+    pub(crate) expiration: u32,
 }
 
 impl PacketHeader {
-    pub async fn write(self, writer: &mut Stream) -> Result<()> {
+    pub(crate) async fn write(self, writer: &mut Stream) -> Result<()> {
         writer.write_u8(self.magic).await?;
         writer.write_u8(self.opcode).await?;
         writer.write_u16(self.key_length).await?;
@@ -74,7 +74,7 @@ impl PacketHeader {
         Ok(())
     }
 
-    pub async fn read(reader: &mut Stream) -> Result<PacketHeader> {
+    pub(crate) async fn read(reader: &mut Stream) -> Result<PacketHeader> {
         let magic = reader.read_u8().await?;
         if magic != Magic::Response as u8 {
             return Err(ServerError::BadMagic(magic).into());
@@ -94,7 +94,7 @@ impl PacketHeader {
 }
 
 #[derive(Debug)]
-pub struct Response {
+pub(crate) struct Response {
     header: PacketHeader,
     key: Vec<u8>,
     extras: Vec<u8>,
@@ -112,7 +112,7 @@ impl Response {
     }
 }
 
-pub async fn parse_response(reader: &mut Stream) -> Result<Response> {
+pub (crate)async fn parse_response(reader: &mut Stream) -> Result<Response> {
     let header = PacketHeader::read(reader).await?;
     let mut extras = vec![0x0; header.extras_length as usize];
     reader.read_exact(extras.as_mut_slice()).await?;
@@ -136,7 +136,7 @@ pub async fn parse_response(reader: &mut Stream) -> Result<Response> {
     })
 }
 
-pub async fn parse_cas_response(reader: &mut Stream) -> Result<bool> {
+pub (crate)async fn parse_cas_response(reader: &mut Stream) -> Result<bool> {
     match parse_response(reader).await?.err() {
         Err(MemcachedError::CommandError(e))
             if e == CommandError::KeyNotFound || e == CommandError::KeyExists =>
@@ -148,12 +148,12 @@ pub async fn parse_cas_response(reader: &mut Stream) -> Result<bool> {
     }
 }
 
-pub async fn parse_version_response(reader: &mut Stream) -> Result<String> {
+pub(crate) async fn parse_version_response(reader: &mut Stream) -> Result<String> {
     let Response { value, .. } = parse_response(reader).await?.err()?;
     Ok(String::from_utf8(value)?)
 }
 
-pub async fn parse_get_response<T: FromMemcachedValueExt>(
+pub(crate) async fn parse_get_response<T: FromMemcachedValueExt>(
     reader: &mut Stream,
 ) -> Result<Option<T>> {
     match parse_response(reader).await?.err() {
@@ -175,7 +175,7 @@ pub async fn parse_get_response<T: FromMemcachedValueExt>(
     }
 }
 
-pub async fn parse_gets_response<V: FromMemcachedValueExt>(
+pub(crate) async fn parse_gets_response<V: FromMemcachedValueExt>(
     reader: &mut Stream,
     max_responses: usize,
 ) -> Result<HashMap<String, V>> {
@@ -192,17 +192,15 @@ pub async fn parse_gets_response<V: FromMemcachedValueExt>(
         }
         let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
         let key = String::from_utf8(key)?;
-        result.insert(
+        let _ = result.insert(
             key,
             V::from_memcached_value(value, flags, Some(header.cas))?,
         );
     }
-    Err(ServerError::BadResponse(Cow::Borrowed(
-        "Expected end of gets response",
-    )))?
+    Err(ServerError::BadResponse(Cow::Borrowed("Expected end of gets response")).into())
 }
 
-pub async fn parse_delete_response(reader: &mut Stream) -> Result<bool> {
+pub(crate) async fn parse_delete_response(reader: &mut Stream) -> Result<bool> {
     match parse_response(reader).await?.err() {
         Ok(_) => Ok(true),
         Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(false),
@@ -210,12 +208,12 @@ pub async fn parse_delete_response(reader: &mut Stream) -> Result<bool> {
     }
 }
 
-pub async fn parse_counter_response(reader: &mut Stream) -> Result<u64> {
+pub(crate) async fn parse_counter_response(reader: &mut Stream) -> Result<u64> {
     let Response { value, .. } = parse_response(reader).await?.err()?;
     Ok(Cursor::new(value).read_u64::<BigEndian>()?)
 }
 
-pub async fn parse_touch_response(reader: &mut Stream) -> Result<bool> {
+pub(crate) async fn parse_touch_response(reader: &mut Stream) -> Result<bool> {
     match parse_response(reader).await?.err() {
         Ok(_) => Ok(true),
         Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(false),
@@ -223,7 +221,7 @@ pub async fn parse_touch_response(reader: &mut Stream) -> Result<bool> {
     }
 }
 
-pub async fn parse_stats_response(reader: &mut Stream) -> Result<HashMap<String, String>> {
+pub(crate) async fn parse_stats_response(reader: &mut Stream) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
     loop {
         let Response { key, value, .. } = parse_response(reader).await?.err()?;
@@ -232,11 +230,11 @@ pub async fn parse_stats_response(reader: &mut Stream) -> Result<HashMap<String,
         if key.is_empty() && value.is_empty() {
             break;
         }
-        result.insert(key, value);
+        let _ = result.insert(key, value);
     }
     Ok(result)
 }
 
-pub async fn parse_start_auth_response(reader: &mut Stream) -> Result<bool> {
+pub(crate) async fn parse_start_auth_response(reader: &mut Stream) -> Result<bool> {
     parse_response(reader).await?.err().map(|_| true)
 }

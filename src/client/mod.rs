@@ -1,7 +1,7 @@
 mod check;
 mod client_hash;
-pub mod connectable;
-pub mod values;
+pub(crate) mod connectable;
+pub(crate) mod values;
 
 use crate::connection::ConnectionManager;
 use crate::Result;
@@ -47,7 +47,7 @@ impl Client {
 
     pub async fn version(&self) -> Result<Vec<String>> {
         let mut result = Vec::with_capacity(self.connections.len());
-        for connection in self.connections.iter() {
+        for connection in &self.connections {
             let mut connection = connection.get().await?;
             result.push(connection.version().await?);
         }
@@ -56,7 +56,7 @@ impl Client {
 
     /// Flush all cache on memcached server immediately.
     pub async fn flush(&self) -> Result<()> {
-        for connection in self.connections.iter() {
+        for connection in &self.connections {
             connection.get().await?.flush().await?;
         }
         Ok(())
@@ -64,7 +64,7 @@ impl Client {
 
     /// Flush all cache on memcached server with a delay seconds.
     pub async fn flush_with_delay(&self, delay: u32) -> Result<()> {
-        for connection in self.connections.iter() {
+        for connection in &self.connections {
             connection.get().await?.flush_with_delay(delay).await?;
         }
         Ok(())
@@ -252,7 +252,7 @@ impl Client {
     /// ```
     pub async fn stats(&self) -> Result<Vec<(String, HashMap<String, String>)>> {
         let mut result: Vec<(String, HashMap<String, String>)> = vec![];
-        for connection in self.connections.iter() {
+        for connection in &self.connections {
             let mut connection = connection.get().await?;
             let stats_info = connection.stats().await?;
             let url = connection.url.to_string();
@@ -271,7 +271,10 @@ impl Client {
     /// assert_eq!(result.len(), 1);
     /// assert_eq!(result["foo"], "42");
     /// ```
-    pub async fn gets<V: FromMemcachedValueExt>(&self, keys: &[&str]) -> Result<HashMap<String, V>> {
+    pub async fn gets<V: FromMemcachedValueExt>(
+        &self,
+        keys: &[&str],
+    ) -> Result<HashMap<String, V>> {
         for key in keys {
             check::check_key_len(key)?;
         }
@@ -280,12 +283,12 @@ impl Client {
         let connections_count = self.connections.len();
 
         for key in keys {
-            let connection_index = (self.hash_function)(key) as usize % connections_count;
+            let connection_index = (self.hash_function)(key) % connections_count;
             let array = con_keys.entry(connection_index).or_insert_with(Vec::new);
             array.push(key);
         }
-        for (&connection_index, keys) in con_keys.iter() {
-            let connection = self.connections[connection_index].clone();
+        for (&connection_index, keys) in &con_keys {
+            let connection = self.connections.get(connection_index).unwrap();
             result.extend(connection.get().await?.gets(keys).await?);
         }
         Ok(result)
