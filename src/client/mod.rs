@@ -21,7 +21,7 @@ pub struct Client {
 impl Client {
     /// 获取连接，默认连接池个数为1
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// let client = memcached::Client::connect("memcache://127.0.0.1:12345").unwrap();
@@ -31,7 +31,7 @@ impl Client {
     }
     /// 创建一个client，可以指定多个url，连接池大小，key hash连接池的函数
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// let client = memcached::Client::connects_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
@@ -57,7 +57,7 @@ impl Client {
 
     /// 获取版本号
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
@@ -76,7 +76,7 @@ impl Client {
 
     /// Get a value by key
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
@@ -92,7 +92,7 @@ impl Client {
 
     /// Set a key with associate value into memcached server with expiration seconds.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
@@ -113,7 +113,7 @@ impl Client {
 
     /// Flush all cache on memcached server immediately.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```no_run
     /// # async_std::task::block_on(async {
@@ -133,7 +133,7 @@ impl Client {
 
     /// Flush all cache on memcached server with a delay seconds.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```no_run
     /// # async_std::task::block_on(async {
@@ -156,11 +156,12 @@ impl Client {
 
     /// Add a key with associate value into memcached server with expiration seconds.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
     /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.delete("add_test").await.unwrap();
     /// client.add("add_test", b"hello", 100).await.unwrap();
     /// // repeat add KeyExists
     /// client.add("add_test", b"hello233", 100).await.unwrap_err();
@@ -179,11 +180,12 @@ impl Client {
 
     /// Replace a key with associate value into memcached server with expiration seconds.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
     /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.delete("replace_test").await.unwrap();
     /// // KeyNotFound
     /// client.replace("replace_test", b"hello", 100).await.unwrap_err();
     /// client.add("replace_test", b"hello", 100).await.unwrap();
@@ -203,12 +205,12 @@ impl Client {
 
     /// Append value to the key.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
     /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.add("append_test", b"hello", 100).await.unwrap();
+    /// client.set("append_test", b"hello", 100).await.unwrap();
     /// client.append("append_test", b", 233").await.unwrap();
     /// let t: Option<String> = client.get("append_test").await.unwrap();
     /// assert_eq!(t, Some("hello, 233".to_owned()));
@@ -224,12 +226,12 @@ impl Client {
     }
     /// Prepend value to the key.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
     /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.add("prepend_test", b"hello", 100).await.unwrap();
+    /// client.set("prepend_test", b"hello", 100).await.unwrap();
     /// client.prepend("prepend_test", b"233! ").await.unwrap();
     /// let t: Option<String> = client.get("prepend_test").await.unwrap();
     /// assert_eq!(t, Some("233! hello".to_owned()));
@@ -246,7 +248,7 @@ impl Client {
 
     /// Delete a key from memcached server.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
@@ -266,7 +268,7 @@ impl Client {
 
     /// Increment the value with amount.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
@@ -289,7 +291,7 @@ impl Client {
 
     /// Decrement the value with amount.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
@@ -312,7 +314,7 @@ impl Client {
 
     /// Set a new expiration time for a exist key.
     ///
-    /// Example
+    /// ## Example
     ///
     /// ```rust
     /// # async_std::task::block_on(async {
@@ -337,6 +339,15 @@ impl Client {
     }
 
     /// Get all servers' statistics.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # async_std::task::block_on(async {
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// let t = client.stats().await.unwrap();
+    /// # });
+    /// ```
     pub async fn stats(&self) -> Result<Vec<(String, HashMap<String, String>)>> {
         let mut result: Vec<(String, HashMap<String, String>)> = vec![];
         for connection in &self.connections {
@@ -348,6 +359,20 @@ impl Client {
         Ok(result)
     }
     /// Get multiple keys from memcached server. Using this function instead of calling `get` multiple times can reduce netwark workloads.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # async_std::task::block_on(async {
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.set("gets_test1", b"100", 100).await.unwrap();
+    /// client.set("gets_test2", b"200", 100).await.unwrap();
+    /// let t = client
+    ///    .gets::<(Vec<u8>, u32, Option<u64>)>(&["gets_test1", "gets_test2"])
+    ///    .await
+    ///    .unwrap();;
+    /// # });
+    /// ```
     pub async fn gets<V: FromMemcachedValueExt>(
         &self,
         keys: &[&str],
@@ -373,6 +398,33 @@ impl Client {
 
     /// Compare and swap a key with the associate value into memcached server with expiration seconds.
     /// `cas_id` should be obtained from a previous `gets` call.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # async_std::task::block_on(async {
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.set("cas_test1", b"100", 100).await.unwrap();
+    /// let t = client
+    ///     .gets::<(Vec<u8>, u32, Option<u64>)>(&["cas_test1"])
+    ///     .await
+    ///     .unwrap();
+    /// let k = t.get("cas_test1").unwrap();
+    /// assert_eq!(std::str::from_utf8(&k.0).unwrap(), "100");
+    /// let t = client
+    ///     .cas("cas_test1", b"200", 100, k.2.unwrap() - 1)
+    ///     .await
+    ///     .unwrap();
+    /// let t = client.get::<String>("cas_test1").await.unwrap();
+    /// assert_eq!(t.unwrap(), "100".to_owned());
+    /// let t = client
+    ///     .cas("cas_test1", b"300", 100, k.2.unwrap())
+    ///     .await
+    ///     .unwrap();
+    /// let t = client.get::<String>("cas_test1").await.unwrap();
+    /// assert_eq!(t.unwrap(), "300".to_owned());;
+    /// # });
+    /// ```
     pub async fn cas(&self, key: &str, value: &[u8], expiration: u32, cas_id: u64) -> Result<bool> {
         check::check_key_len(key)?;
         self.get_connection(key)

@@ -66,7 +66,7 @@ pub use client::{connectable::Connectable, Client};
 /// Create a memcached client instance and connect to memcached server.
 /// 默认连接池个数为1
 ///
-/// Example
+/// ## Example
 ///
 /// ```rust
 /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
@@ -77,7 +77,7 @@ pub fn connect(url: &str) -> Result<Client> {
 
 /// 创建一个client，可以指定多个url，连接池大小，key hash连接池的函数
 ///
-/// Example
+/// ## Example
 ///
 /// ```rust
 /// let client = memcached::Client::connects_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
@@ -90,18 +90,31 @@ pub fn connects_withconnects_with(
     Client::connects_with(urls, pool_size, hash_function)
 }
 
-// #[cfg(test)]
-// mod tests {
-//     #[async_std::test]
-//     async fn it_works() {
-//         let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
-//         client.set("touch_test", b"100", 100).await.unwrap();
-//         async_std::task::sleep(core::time::Duration::from_secs(1)).await;
-//         let t: Option<String> = client.get("touch_test").await.unwrap();
-//         assert_eq!(t, Some("100".to_owned()));
-//         let _ = client.touch("touch_test", 1).await.unwrap();
-//         async_std::task::sleep(core::time::Duration::from_secs(1)).await;
-//         let t: Option<String> = client.get("touch_test").await.unwrap();
-//         assert_eq!(t, None);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    #[async_std::test]
+    async fn it_works() {
+        let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
+        let t = client.stats().await.unwrap();
+        dbg!(t);
+        // client.set("cas_test1", b"100", 100).await.unwrap();
+        // let t = client
+        //     .gets::<(Vec<u8>, u32, Option<u64>)>(&["cas_test1"])
+        //     .await
+        //     .unwrap();
+        // let k = t.get("cas_test1").unwrap();
+        // assert_eq!(std::str::from_utf8(&k.0).unwrap(), "100");
+        // let t = client
+        //     .cas("cas_test1", b"200", 100, k.2.unwrap() - 1)
+        //     .await
+        //     .unwrap();
+        // let t = client.get::<String>("cas_test1").await.unwrap();
+        // assert_eq!(t.unwrap(), "100".to_owned());
+        // let t = client
+        //     .cas("cas_test1", b"300", 100, k.2.unwrap())
+        //     .await
+        //     .unwrap();
+        // let t = client.get::<String>("cas_test1").await.unwrap();
+        // assert_eq!(t.unwrap(), "300".to_owned());
+    }
+}
