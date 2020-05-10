@@ -61,15 +61,18 @@ pub async fn connect(url: &str) -> Result<Client> {
 
 #[cfg(test)]
 mod tests {
-
     pub use crate::Result;
     #[async_std::test]
     async fn it_works() {
         let client = super::connect("memcache://127.0.0.1:12345").await.unwrap();
         let version = client.version().await.unwrap();
-        client.set("123", "456", 100).await.unwrap();
-        let get: Option<String> = client.get("123").await.unwrap();
-        let no: Option<String> = client.get("1234").await.unwrap();
-        dbg!(version, get, no);
+        dbg!(version);
+
+        client.set("123", b"456", 100).await.unwrap();
+        client.append("123", b"789").await.unwrap();
+        let a1: Option<String> = client.get("123").await.unwrap();
+        let a2: Option<String> = client.get("1234").await.unwrap();
+        assert_eq!(a1, Some("456789".to_string()));
+        assert_eq!(a2, None);
     }
 }

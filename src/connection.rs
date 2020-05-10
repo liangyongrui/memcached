@@ -57,11 +57,11 @@ impl Manager for ConnectionManager {
     /// Attempts to create a new connection.
     async fn connect(&self) -> std::result::Result<Self::Connection, Self::Error> {
         let url = &self.url;
-        let connection = Connection::connect(url).await?;
+        let mut connection = Connection::connect(url).await?;
         if url.has_authority() && !url.username().is_empty() && url.password().is_some() {
-            // let username = url.username();
-            // let password = url.password().unwrap();
-            // connection.auth(username, password)?;
+            let username = url.username();
+            let password = url.password().unwrap();
+            connection.auth(username, password).await?;
         }
         Ok(connection)
     }
@@ -69,7 +69,10 @@ impl Manager for ConnectionManager {
     ///
     /// A standard implementation would check if a simple query like `SELECT 1`
     /// succeeds.
-    async fn check(&self, mut conn: Self::Connection) -> std::result::Result<Self::Connection, Self::Error> {
+    async fn check(
+        &self,
+        mut conn: Self::Connection,
+    ) -> std::result::Result<Self::Connection, Self::Error> {
         let _ = conn.version().await?;
         Ok(conn)
     }

@@ -1,16 +1,33 @@
 pub mod binary_packet;
 
 use self::binary_packet::{Magic, Opcode, PacketHeader};
-use crate::{
-    client::values::{FromMemcachedValueExt, ToMemcachedValue},
-    stream::Stream,
-    Result,
-};
+use crate::{client::values::FromMemcachedValueExt, stream::Stream, Result};
+use std::collections::HashMap;
+
 pub struct BinaryProtocol {
     pub stream: Stream,
 }
 
 impl BinaryProtocol {
+    pub async fn auth(&mut self, username: &str, password: &str) -> Result<()> {
+        let key = "PLAIN";
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::StartAuth as u8,
+            key_length: key.len() as u16,
+            total_body_length: (key.len() + username.len() + password.len() + 2) as u32,
+            ..Default::default()
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.write_all(key.as_bytes()).await?;
+        self.stream
+            .write_all(format!("\x00{}\x00{}", username, password).as_bytes())
+            .await?;
+        self.stream.flush().await?;
+        binary_packet::parse_start_auth_response(&mut self.stream)
+            .await
+            .map(|_| ())
+    }
     pub async fn version(&mut self) -> Result<String> {
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
@@ -69,39 +86,24 @@ impl BinaryProtocol {
         binary_packet::parse_get_response(&mut self.stream).await
     }
 
-    pub async fn set<V: ToMemcachedValue>(
-        &mut self,
-        key: &str,
-        value: V,
-        expiration: u32,
-    ) -> Result<()> {
+    pub async fn set(&mut self, key: &str, value: &[u8], expiration: u32) -> Result<()> {
         self.store(Opcode::Set, key, value, expiration, None).await
     }
 
-    pub async fn add<V: ToMemcachedValue>(
-        &mut self,
-        key: &str,
-        value: V,
-        expiration: u32,
-    ) -> Result<()> {
+    pub async fn add(&mut self, key: &str, value: &[u8], expiration: u32) -> Result<()> {
         self.store(Opcode::Add, key, value, expiration, None).await
     }
 
-    pub async fn replace<V: ToMemcachedValue>(
-        &mut self,
-        key: &str,
-        value: V,
-        expiration: u32,
-    ) -> Result<()> {
+    pub async fn replace(&mut self, key: &str, value: &[u8], expiration: u32) -> Result<()> {
         self.store(Opcode::Replace, key, value, expiration, None)
             .await
     }
 
-    async fn send_request<T: ToMemcachedValue>(
+    async fn send_request(
         &mut self,
         opcode: Opcode,
         key: &str,
-        value: T,
+        value: &[u8],
         expiration: u32,
         cas: Option<u64>,
     ) -> Result<()> {
@@ -110,27 +112,28 @@ impl BinaryProtocol {
             opcode: opcode as u8,
             key_length: key.len() as u16,
             extras_length: 8,
-            total_body_length: (8 + key.len() + value.get_length()) as u32,
+            total_body_length: (8 + key.len() + value.len()) as u32,
             cas: cas.unwrap_or(0),
             ..Default::default()
         };
         let extras = binary_packet::StoreExtras {
-            flags: value.get_flags(),
+            flags: 0,
             expiration,
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_u32(extras.flags).await?;
         self.stream.write_u32(extras.expiration).await?;
         self.stream.write_all(key.as_bytes()).await?;
-        value.write_to(&mut self.stream).await?;
+        self.stream.write_all(value).await?;
+        // value.write_to(&mut self.stream).await?;
         self.stream.flush().await.map_err(Into::into)
     }
 
-    async fn store<V: ToMemcachedValue>(
+    async fn store(
         &mut self,
         opcode: Opcode,
         key: &str,
-        value: V,
+        value: &[u8],
         expiration: u32,
         cas: Option<u64>,
     ) -> Result<()> {
@@ -140,5 +143,164 @@ impl BinaryProtocol {
             .await?
             .err()
             .map(|_| ())
+    }
+
+    pub async fn append(&mut self, key: &str, value: &[u8]) -> Result<()> {
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Append as u8,
+            key_length: key.len() as u16,
+            total_body_length: (key.len() + value.len()) as u32,
+            ..Default::default()
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.write_all(key.as_bytes()).await?;
+        self.stream.write_all(value).await?;
+        self.stream.flush().await?;
+        binary_packet::parse_response(&mut self.stream)
+            .await?
+            .err()
+            .map(|_| ())
+    }
+
+    pub async fn cas(
+        &mut self,
+        key: &str,
+        value: &[u8],
+        expiration: u32,
+        cas: u64,
+    ) -> Result<bool> {
+        self.send_request(Opcode::Set, key, value, expiration, Some(cas))
+            .await?;
+        binary_packet::parse_cas_response(&mut self.stream).await
+    }
+
+    pub async fn prepend(&mut self, key: &str, value: &[u8]) -> Result<()> {
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Prepend as u8,
+            key_length: key.len() as u16,
+            total_body_length: (key.len() + value.len()) as u32,
+            ..Default::default()
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.write_all(key.as_bytes()).await?;
+        self.stream.write_all(value).await?;
+        self.stream.flush().await?;
+        binary_packet::parse_response(&mut self.stream)
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn delete(&mut self, key: &str) -> Result<bool> {
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Delete as u8,
+            key_length: key.len() as u16,
+            total_body_length: key.len() as u32,
+            ..Default::default()
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.write_all(key.as_bytes()).await?;
+        self.stream.flush().await?;
+        binary_packet::parse_delete_response(&mut self.stream).await
+    }
+
+    pub async fn increment(&mut self, key: &str, amount: u64) -> Result<u64> {
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Increment as u8,
+            key_length: key.len() as u16,
+            extras_length: 20,
+            total_body_length: (20 + key.len()) as u32,
+            ..Default::default()
+        };
+        let extras = binary_packet::CounterExtras {
+            amount,
+            initial_value: 0,
+            expiration: 0,
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.write_u64(extras.amount).await?;
+        self.stream.write_u64(extras.initial_value).await?;
+        self.stream.write_u32(extras.expiration).await?;
+        self.stream.write_all(key.as_bytes()).await?;
+        self.stream.flush().await?;
+        binary_packet::parse_counter_response(&mut self.stream).await
+    }
+
+    pub async fn decrement(&mut self, key: &str, amount: u64) -> Result<u64> {
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Decrement as u8,
+            key_length: key.len() as u16,
+            extras_length: 20,
+            total_body_length: (20 + key.len()) as u32,
+            ..Default::default()
+        };
+        let extras = binary_packet::CounterExtras {
+            amount,
+            initial_value: 0,
+            expiration: 0,
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.write_u64(extras.amount).await?;
+        self.stream.write_u64(extras.initial_value).await?;
+        self.stream.write_u32(extras.expiration).await?;
+        self.stream.write_all(key.as_bytes()).await?;
+        self.stream.flush().await?;
+        binary_packet::parse_counter_response(&mut self.stream).await
+    }
+
+    pub async fn touch(&mut self, key: &str, expiration: u32) -> Result<bool> {
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Touch as u8,
+            key_length: key.len() as u16,
+            extras_length: 4,
+            total_body_length: (key.len() as u32 + 4),
+            ..Default::default()
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.write_u32(expiration).await?;
+        self.stream.write_all(key.as_bytes()).await?;
+        self.stream.flush().await?;
+        binary_packet::parse_touch_response(&mut self.stream).await
+    }
+
+    pub async fn stats(&mut self) -> Result<HashMap<String, String>> {
+        let request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Stat as u8,
+            ..Default::default()
+        };
+        request_header.write(&mut self.stream).await?;
+        self.stream.flush().await?;
+        let stats_info = binary_packet::parse_stats_response(&mut self.stream).await?;
+        Ok(stats_info)
+    }
+
+    pub async fn gets<V: FromMemcachedValueExt>(
+        &mut self,
+        keys: &[&str],
+    ) -> Result<HashMap<String, V>> {
+        for key in keys {
+            let request_header = PacketHeader {
+                magic: Magic::Request as u8,
+                opcode: Opcode::GetKQ as u8,
+                key_length: key.len() as u16,
+                total_body_length: key.len() as u32,
+                ..Default::default()
+            };
+            request_header.write(&mut self.stream).await?;
+            self.stream.write_all(key.as_bytes()).await?;
+        }
+        let noop_request_header = PacketHeader {
+            magic: Magic::Request as u8,
+            opcode: Opcode::Noop as u8,
+            ..Default::default()
+        };
+        noop_request_header.write(&mut self.stream).await?;
+        binary_packet::parse_gets_response(&mut self.stream, keys.len()).await
     }
 }
