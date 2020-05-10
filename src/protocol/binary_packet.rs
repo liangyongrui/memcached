@@ -1,5 +1,6 @@
 use crate::stream::Stream;
 use crate::Result;
+use async_std::io::Cursor;
 
 const OK_STATUS: u16 = 0x0;
 
@@ -87,6 +88,7 @@ impl PacketHeader {
     }
 }
 
+#[derive(Debug)]
 pub struct Response {
     header: PacketHeader,
     key: Vec<u8>,
@@ -146,27 +148,13 @@ pub async fn parse_version_response(reader: &mut Stream) -> Result<String> {
     Ok(String::from_utf8(value)?)
 }
 
-// pub fn parse_get_response<R: io::Read, V: FromMemcacheValueExt>(
-//     reader: &mut R,
-// ) -> Result<Option<V>, MemcacheError> {
-//     match parse_response(reader)?.err() {
-//         Ok(Response {
-//             header,
-//             extras,
-//             value,
-//             ..
-//         }) => {
-//             let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
-//             Ok(Some(FromMemcacheValueExt::from_memcache_value(
-//                 value,
-//                 flags,
-//                 Some(header.cas),
-//             )?))
-//         }
-//         Err(MemcacheError::CommandError(CommandError::KeyNotFound)) => Ok(None),
-//         Err(e) => Err(e),
-//     }
-// }
+pub async fn parse_get_response(reader: &mut Stream) -> Result<Option<Response>> {
+    match parse_response(reader).await?.err() {
+        Ok(t) => Ok(Some(t)),
+        // todo key not found Ok(None)
+        Err(e) => Err(e),
+    }
+}
 
 // pub fn parse_gets_response<R: io::Read, V: FromMemcacheValueExt>(
 //     reader: &mut R,

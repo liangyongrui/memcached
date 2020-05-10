@@ -52,7 +52,7 @@ mod protocol;
 mod stream;
 
 pub use anyhow::Result;
-pub use client::{Client, Connectable};
+pub use client::{connectable::Connectable, Client};
 /// Create a memcached client instance and connect to memcached server.
 pub async fn connect(url: &str) -> Result<Client> {
     Client::connect(url.to_owned())
@@ -64,12 +64,10 @@ mod tests {
     pub use anyhow::Result;
     #[async_std::test]
     async fn it_works() {
-        let version = super::connect("memcache://127.0.0.1:12345")
-            .await
-            .unwrap()
-            .version()
-            .await
-            .unwrap();
-        dbg!(version);
+        let client = super::connect("memcache://127.0.0.1:12345").await.unwrap();
+        let version = client.version().await.unwrap();
+        client.set("123", "456", 100).await.unwrap();
+        let get = client.get("123").await.unwrap();
+        dbg!(version, get);
     }
 }
