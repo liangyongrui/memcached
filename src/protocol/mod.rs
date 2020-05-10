@@ -1,7 +1,8 @@
 pub(crate) mod binary_packet;
-
-use self::binary_packet::{Magic, Opcode, PacketHeader};
+mod code;
+use self::binary_packet::PacketHeader;
 use crate::{client::values::FromMemcachedValueExt, stream::Stream, Result};
+use code::{Magic, Opcode};
 use std::collections::HashMap;
 
 pub(crate) struct BinaryProtocol {

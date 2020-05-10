@@ -8,22 +8,22 @@ pub(crate) enum Stream {
 }
 
 impl Stream {
-    pub(crate) async fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        Ok(match self {
-            Stream::Tcp(ref mut stream) => stream.read(buf).await?,
-        })
-    }
+    // pub(crate) async fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+    //     Ok(match self {
+    //         Stream::Tcp(ref mut stream) => stream.read(buf).await?,
+    //     })
+    // }
     pub(crate) async fn read_exact(&mut self, buf: &mut [u8]) -> Result<()> {
         match self {
             Stream::Tcp(ref mut stream) => stream.read_exact(buf).await?,
         }
         Ok(())
     }
-    pub(crate) async fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        Ok(match self {
-            Stream::Tcp(ref mut stream) => stream.write(buf).await?,
-        })
-    }
+    // pub(crate) async fn write(&mut self, buf: &[u8]) -> Result<usize> {
+    //     Ok(match self {
+    //         Stream::Tcp(ref mut stream) => stream.write(buf).await?,
+    //     })
+    // }
     pub(crate) async fn write_all(&mut self, buf: &[u8]) -> Result<()> {
         match self {
             Stream::Tcp(ref mut stream) => stream.write_all(buf).await?,

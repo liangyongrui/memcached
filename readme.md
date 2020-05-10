@@ -2,6 +2,10 @@
 
 wip
 
+## test
+
+cargo test -- --test-threads=1
+
 ## todo list
 
 1. read write timeout

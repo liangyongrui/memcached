@@ -1,7 +1,7 @@
 //!
 
 #![deny(
-//     missing_docs,
+    // missing_docs,
     bare_trait_objects,
     missing_copy_implementations,
     single_use_lifetimes,
@@ -28,7 +28,6 @@
     clippy::pedantic
 )]
 #![allow(
-    dead_code,
     unused_imports,
     clippy::missing_inline_in_public_items,
     clippy::missing_errors_doc,
@@ -44,6 +43,7 @@
     //
     clippy::pub_enum_variant_names,
     clippy::multiple_crate_versions,
+    clippy::doc_markdown,
     clippy::result_unwrap_used, //
     clippy::option_unwrap_used, //
     clippy::cast_possible_truncation, //
@@ -51,8 +51,8 @@
     clippy::get_unwrap, //
 )]
 
-#[macro_use]
-extern crate anyhow;
+// #[macro_use]
+// extern crate anyhow;
 
 mod client;
 mod connection;
@@ -89,21 +89,3 @@ pub fn connects_withconnects_with(
 ) -> Result<Client> {
     Client::connects_with(urls, pool_size, hash_function)
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::Result;
-//     #[async_std::test]
-//     async fn it_works() {
-//         let client = super::connect("memcache://127.0.0.1:12345").await.unwrap();
-//         let version = client.version().await.unwrap();
-//         dbg!(version);
-
-//         client.set("123", b"456", 100).await.unwrap();
-//         client.append("123", b"789").await.unwrap();
-//         let a1: Option<String> = client.get("123").await.unwrap();
-//         let a2: Option<String> = client.get("1234").await.unwrap();
-//         assert_eq!(a1, Some("456789".to_string()));
-//         assert_eq!(a2, None);
-//     }
-// }

@@ -1,3 +1,4 @@
+use super::code::{Magic, Opcode, OK_STATUS};
 use crate::stream::Stream;
 use crate::{
     client::values::FromMemcachedValueExt,
@@ -6,33 +7,6 @@ use crate::{
 };
 use byteorder::{BigEndian, ReadBytesExt};
 use std::{borrow::Cow, collections::HashMap, io::Cursor};
-
-const OK_STATUS: u16 = 0x0;
-
-#[allow(dead_code)]
-pub(crate) enum Opcode {
-    Get = 0x00,
-    Set = 0x01,
-    Add = 0x02,
-    Replace = 0x03,
-    Delete = 0x04,
-    Increment = 0x05,
-    Decrement = 0x06,
-    Flush = 0x08,
-    Stat = 0x10,
-    Noop = 0x0a,
-    Version = 0x0b,
-    GetKQ = 0x0d,
-    Append = 0x0e,
-    Prepend = 0x0f,
-    Touch = 0x1c,
-    StartAuth = 0x21,
-}
-
-pub(crate) enum Magic {
-    Request = 0x80,
-    Response = 0x81,
-}
 
 #[derive(Debug, Default)]
 pub(crate) struct PacketHeader {
@@ -112,7 +86,7 @@ impl Response {
     }
 }
 
-pub (crate)async fn parse_response(reader: &mut Stream) -> Result<Response> {
+pub(crate) async fn parse_response(reader: &mut Stream) -> Result<Response> {
     let header = PacketHeader::read(reader).await?;
     let mut extras = vec![0x0; header.extras_length as usize];
     reader.read_exact(extras.as_mut_slice()).await?;
@@ -136,7 +110,7 @@ pub (crate)async fn parse_response(reader: &mut Stream) -> Result<Response> {
     })
 }
 
-pub (crate)async fn parse_cas_response(reader: &mut Stream) -> Result<bool> {
+pub(crate) async fn parse_cas_response(reader: &mut Stream) -> Result<bool> {
     match parse_response(reader).await?.err() {
         Err(MemcachedError::CommandError(e))
             if e == CommandError::KeyNotFound || e == CommandError::KeyExists =>
