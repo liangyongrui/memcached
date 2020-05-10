@@ -69,6 +69,8 @@ pub enum CommandError {
     InvalidArguments,
     /// The server requires authentication.
     AuthenticationRequired,
+    ///Incr/Decr on non-numeric value.
+    IncrOrDecrOnNonNumericValue,
     /// When using binary protocol, the server returned an unknown response status.
     Unknown(u16),
     /// The client sent an invalid command to the server.
@@ -113,6 +115,9 @@ impl fmt::Display for CommandError {
             CommandError::ValueTooLarge => write!(f, "Value was too large."),
             CommandError::InvalidArguments => write!(f, "Invalid arguments provided."),
             CommandError::AuthenticationRequired => write!(f, "Authentication required."),
+            CommandError::IncrOrDecrOnNonNumericValue => {
+                write!(f, "Incr/Decr on non-numeric value.")
+            }
             CommandError::Unknown(code) => write!(f, "Unknown error occurred with code: {}.", code),
             CommandError::InvalidCommand => write!(f, "Invalid command sent to the server."),
         }
@@ -126,6 +131,7 @@ impl From<u16> for CommandError {
             0x2 => CommandError::KeyExists,
             0x3 => CommandError::ValueTooLarge,
             0x4 => CommandError::InvalidArguments,
+            0x6 => CommandError::IncrOrDecrOnNonNumericValue,
             0x20 => CommandError::AuthenticationRequired,
             e => CommandError::Unknown(e),
         }

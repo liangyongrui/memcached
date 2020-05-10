@@ -44,7 +44,7 @@ macro_rules! impl_from_memcached_value_for_number {
         impl FromMemcachedValue for $ty {
             fn from_memcached_value(value: Vec<u8>, _: u32) -> Result<Self> {
                 let s: String = FromMemcachedValue::from_memcached_value(value, 0)?;
-                Ok(Self::from_str(s.as_str())?)
+                Ok(Self::from_str(s.as_str().trim())?)
             }
         }
     };

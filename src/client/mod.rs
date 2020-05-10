@@ -81,7 +81,7 @@ impl Client {
     /// ```rust
     /// # async_std::task::block_on(async {
     /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// let t: Option<String> = client.get("abc").await.unwrap();
+    /// let t: Option<String> = client.get("get_none").await.unwrap();
     /// assert_eq!(t, None);
     /// # });
     /// ```
@@ -115,7 +115,7 @@ impl Client {
     ///
     /// Example
     ///
-    /// ```rust
+    /// ```no_run
     /// # async_std::task::block_on(async {
     /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
     /// client.set("flush_test", b"hello", 100).await.unwrap();
@@ -135,7 +135,7 @@ impl Client {
     ///
     /// Example
     ///
-    /// ```rust
+    /// ```no_run
     /// # async_std::task::block_on(async {
     /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
     /// client.set("flush_with_delay_test", b"hello", 100).await.unwrap();
@@ -245,12 +245,39 @@ impl Client {
     }
 
     /// Delete a key from memcached server.
+    ///
+    /// Example
+    ///
+    /// ```rust
+    /// # async_std::task::block_on(async {
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.add("delete_test", b"hello", 100).await.unwrap();
+    /// let t: Option<String> = client.get("delete_test").await.unwrap();
+    /// assert_eq!(t, Some("hello".to_owned()));
+    /// client.delete("delete_test").await.unwrap();
+    /// let t: Option<String> = client.get("delete_test").await.unwrap();
+    /// assert_eq!(t, None);
+    /// # });
+    /// ```
     pub async fn delete(&self, key: &str) -> Result<bool> {
         check::check_key_len(key)?;
         self.get_connection(key).get().await?.delete(key).await
     }
 
     /// Increment the value with amount.
+    ///
+    /// Example
+    ///
+    /// ```rust
+    /// # async_std::task::block_on(async {
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.set("increment_test", b"100", 100).await.unwrap();
+    /// client.increment("increment_test", 10).await.unwrap();
+    /// assert_eq!(120, client.increment("increment_test", 10).await.unwrap());
+    /// let t: Option<String> = client.get("increment_test").await.unwrap();
+    /// assert_eq!(t, Some("120".to_owned()));
+    /// # });
+    /// ```
     pub async fn increment(&self, key: &str, amount: u64) -> Result<u64> {
         check::check_key_len(key)?;
         self.get_connection(key)
@@ -261,6 +288,19 @@ impl Client {
     }
 
     /// Decrement the value with amount.
+    ///
+    /// Example
+    ///
+    /// ```rust
+    /// # async_std::task::block_on(async {
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.set("decrement_test", b"100", 100).await.unwrap();
+    /// client.decrement("decrement_test", 10).await.unwrap();
+    /// assert_eq!(80, client.decrement("decrement_test", 10).await.unwrap());
+    /// let t: Option<u64> = client.get("decrement_test").await.unwrap();
+    /// assert_eq!(t, Some(80));
+    /// # });
+    /// ```
     pub async fn decrement(&self, key: &str, amount: u64) -> Result<u64> {
         check::check_key_len(key)?;
         self.get_connection(key)
@@ -271,6 +311,22 @@ impl Client {
     }
 
     /// Set a new expiration time for a exist key.
+    ///
+    /// Example
+    ///
+    /// ```rust
+    /// # async_std::task::block_on(async {
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+    /// client.set("touch_test", b"100", 100).await.unwrap();
+    /// async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+    /// let t: Option<String> = client.get("touch_test").await.unwrap();
+    /// assert_eq!(t, Some("100".to_owned()));
+    /// client.touch("touch_test", 1).await.unwrap();
+    /// async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+    /// let t: Option<String> = client.get("touch_test").await.unwrap();
+    /// assert_eq!(t, None);
+    /// # });
+    /// ```
     pub async fn touch(&self, key: &str, expiration: u32) -> Result<bool> {
         check::check_key_len(key)?;
         self.get_connection(key)

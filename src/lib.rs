@@ -89,3 +89,19 @@ pub fn connects_withconnects_with(
 ) -> Result<Client> {
     Client::connects_with(urls, pool_size, hash_function)
 }
+
+// #[cfg(test)]
+// mod tests {
+//     #[async_std::test]
+//     async fn it_works() {
+//         let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
+//         client.set("touch_test", b"100", 100).await.unwrap();
+//         async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+//         let t: Option<String> = client.get("touch_test").await.unwrap();
+//         assert_eq!(t, Some("100".to_owned()));
+//         let _ = client.touch("touch_test", 1).await.unwrap();
+//         async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+//         let t: Option<String> = client.get("touch_test").await.unwrap();
+//         assert_eq!(t, None);
+//     }
+// }
