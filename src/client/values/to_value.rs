@@ -8,14 +8,14 @@ pub enum Flags {
 
 /// determine how the value is serialize to memcache
 #[async_trait]
-pub trait ToMemcacheValue {
+pub trait ToMemcachedValue {
     fn get_flags(&self) -> u32;
     fn get_length(&self) -> usize;
     async fn write_to(&self, stream: &mut Stream) -> Result<()>;
 }
 
 #[async_trait]
-impl<'a> ToMemcacheValue for &'a [u8] {
+impl<'a> ToMemcachedValue for &'a [u8] {
     fn get_flags(&self) -> u32 {
         Flags::Bytes as u32
     }
@@ -25,30 +25,28 @@ impl<'a> ToMemcacheValue for &'a [u8] {
     }
 
     async fn write_to(&self, stream: &mut Stream) -> Result<()> {
-        match stream.write_all(self).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
+        stream.write_all(self).await?;
+        Ok(())
     }
 }
 
 #[async_trait]
-impl<'a> ToMemcacheValue for &'a String {
+impl<'a> ToMemcachedValue for &'a String {
     fn get_flags(&self) -> u32 {
-        ToMemcacheValue::get_flags(*self)
+        ToMemcachedValue::get_flags(*self)
     }
 
     fn get_length(&self) -> usize {
-        ToMemcacheValue::get_length(*self)
+        ToMemcachedValue::get_length(*self)
     }
 
     async fn write_to(&self, stream: &mut Stream) -> Result<()> {
-        ToMemcacheValue::write_to(*self, stream).await
+        ToMemcachedValue::write_to(*self, stream).await
     }
 }
 
 #[async_trait]
-impl ToMemcacheValue for String {
+impl ToMemcachedValue for String {
     fn get_flags(&self) -> u32 {
         Flags::Bytes as u32
     }
@@ -66,7 +64,7 @@ impl ToMemcacheValue for String {
 }
 
 #[async_trait]
-impl<'a> ToMemcacheValue for &'a str {
+impl<'a> ToMemcachedValue for &'a str {
     fn get_flags(&self) -> u32 {
         Flags::Bytes as u32
     }
@@ -76,17 +74,15 @@ impl<'a> ToMemcacheValue for &'a str {
     }
 
     async fn write_to(&self, stream: &mut Stream) -> Result<()> {
-        match stream.write_all(self.as_bytes()).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
+        stream.write_all(self.as_bytes()).await?;
+        Ok(())
     }
 }
 
 macro_rules! impl_to_memcache_value_for_number {
     ($ty:ident) => {
         #[async_trait]
-        impl ToMemcacheValue for $ty {
+        impl ToMemcachedValue for $ty {
             fn get_flags(&self) -> u32 {
                 return Flags::Bytes as u32;
             }

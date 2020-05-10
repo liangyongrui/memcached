@@ -1,9 +1,11 @@
 use crate::stream::Stream;
 use crate::{
+    client::values::FromMemcachedValueExt,
     error::{CommandError, MemcachedError, ServerError},
     Result,
 };
-use async_std::io::Cursor;
+use std::io::Cursor;
+use byteorder::{BigEndian, ReadBytesExt};
 
 const OK_STATUS: u16 = 0x0;
 
@@ -75,7 +77,7 @@ impl PacketHeader {
     pub async fn read(reader: &mut Stream) -> Result<PacketHeader> {
         let magic = reader.read_u8().await?;
         if magic != Magic::Response as u8 {
-            return Err(ServerError::BadMagic(magic))?;
+            return Err(ServerError::BadMagic(magic).into());
         }
         Ok(PacketHeader {
             magic,
@@ -105,7 +107,7 @@ impl Response {
         if status == OK_STATUS {
             Ok(self)
         } else {
-            Err(CommandError::from(status))?
+            Err(CommandError::from(status).into())
         }
     }
 }
@@ -151,10 +153,20 @@ pub async fn parse_version_response(reader: &mut Stream) -> Result<String> {
     Ok(String::from_utf8(value)?)
 }
 
-pub async fn parse_get_response(reader: &mut Stream) -> Result<Option<Response>> {
+pub async fn parse_get_response<T: FromMemcachedValueExt>(
+    reader: &mut Stream,
+) -> Result<Option<T>> {
     match parse_response(reader).await?.err() {
-        Ok(t) => Ok(Some(t)),
-        // todo key not found Ok(None)
+        Ok(Response {
+            header, extras, value, ..
+        }) => {
+            let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
+            Ok(Some(T::from_memcached_value(
+                value,
+                flags,
+                Some(header.cas),
+            )?))
+        }        Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(None),
         Err(e) => Err(e),
     }
 }

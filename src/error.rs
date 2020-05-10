@@ -78,15 +78,15 @@ pub enum CommandError {
 impl MemcachedError {
     pub(crate) fn try_from(s: &str) -> Result<&str, MemcachedError> {
         if s == "ERROR\r\n" {
-            Err(CommandError::InvalidCommand)?
+            Err(CommandError::InvalidCommand.into())
         } else if s.starts_with("CLIENT_ERROR") {
-            Err(ClientError::from(String::from(s)))?
+            Err(ClientError::from(String::from(s)).into())
         } else if s.starts_with("SERVER_ERROR") {
-            Err(ServerError::from(String::from(s)))?
+            Err(ServerError::from(String::from(s)).into())
         } else if s == "NOT_FOUND\r\n" {
-            Err(CommandError::KeyNotFound)?
+            Err(CommandError::KeyNotFound.into())
         } else if s == "EXISTS\r\n" {
-            Err(CommandError::KeyExists)?
+            Err(CommandError::KeyExists.into())
         } else {
             Ok(s)
         }
@@ -284,7 +284,7 @@ impl From<io::Error> for MemcachedError {
 }
 
 impl<T> From<mobc::Error<T>> for MemcachedError {
-    fn from(err: mobc::Error<T>) -> MemcachedError {
+    fn from(_: mobc::Error<T>) -> MemcachedError {
         MemcachedError::PoolError("mobc error")
     }
 }

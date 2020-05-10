@@ -68,8 +68,8 @@ mod tests {
         let client = super::connect("memcache://127.0.0.1:12345").await.unwrap();
         let version = client.version().await.unwrap();
         client.set("123", "456", 100).await.unwrap();
-        let get = client.get("123").await.unwrap();
-        dbg!(version, get);
-        let _not = client.get("1234").await.unwrap();
+        let get: Option<String> = client.get("123").await.unwrap();
+        let no: Option<String> = client.get("1234").await.unwrap();
+        dbg!(version, get, no);
     }
 }

@@ -1,14 +1,15 @@
 mod check;
 mod client_hash;
 pub mod connectable;
-pub mod value;
+pub mod values;
 
+use crate::connection::ConnectionManager;
 use crate::Result;
-use crate::{connection::ConnectionManager, protocol::binary_packet::Response};
 use client_hash::default_hash_function;
 use mobc::Pool;
 use url::Url;
-use value::ToMemcacheValue;
+use values::FromMemcachedValueExt;
+use values::ToMemcachedValue;
 
 #[derive(Clone)]
 pub struct Client {
@@ -69,13 +70,13 @@ impl Client {
     }
 
     /// Get a key from memcached server.
-    pub async fn get(&self, key: &str) -> Result<Option<Response>> {
+    pub async fn get<V: FromMemcachedValueExt>(&self, key: &str) -> Result<Option<V>> {
         check::check_key_len(key)?;
         self.get_connection(key).get().await?.get(key).await
     }
 
     /// Set a key with associate value into memcached server with expiration seconds.
-    pub async fn set<V: ToMemcacheValue>(
+    pub async fn set<V: ToMemcachedValue>(
         &self,
         key: &str,
         value: V,
@@ -90,7 +91,7 @@ impl Client {
     }
 
     /// Add a key with associate value into memcached server with expiration seconds.
-    pub async fn add<V: ToMemcacheValue>(
+    pub async fn add<V: ToMemcachedValue>(
         &self,
         key: &str,
         value: V,
@@ -105,7 +106,7 @@ impl Client {
     }
 
     /// Replace a key with associate value into memcached server with expiration seconds.
-    pub async fn replace<V: ToMemcacheValue>(
+    pub async fn replace<V: ToMemcachedValue>(
         &self,
         key: &str,
         value: V,

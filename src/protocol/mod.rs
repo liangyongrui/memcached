@@ -1,8 +1,11 @@
 pub mod binary_packet;
 
 use self::binary_packet::{Magic, Opcode, PacketHeader};
-use crate::{client::value::ToMemcacheValue, stream::Stream, Result};
-use binary_packet::Response;
+use crate::{
+    client::values::{FromMemcachedValueExt, ToMemcachedValue},
+    stream::Stream,
+    Result,
+};
 pub struct BinaryProtocol {
     pub stream: Stream,
 }
@@ -52,7 +55,7 @@ impl BinaryProtocol {
             .map(|_| ())
     }
 
-    pub async fn get(&mut self, key: &str) -> Result<Option<Response>> {
+    pub async fn get<V: FromMemcachedValueExt>(&mut self, key: &str) -> Result<Option<V>> {
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Get as u8,
@@ -66,7 +69,7 @@ impl BinaryProtocol {
         binary_packet::parse_get_response(&mut self.stream).await
     }
 
-    pub async fn set<V: ToMemcacheValue>(
+    pub async fn set<V: ToMemcachedValue>(
         &mut self,
         key: &str,
         value: V,
@@ -75,7 +78,7 @@ impl BinaryProtocol {
         self.store(Opcode::Set, key, value, expiration, None).await
     }
 
-    pub async fn add<V: ToMemcacheValue>(
+    pub async fn add<V: ToMemcachedValue>(
         &mut self,
         key: &str,
         value: V,
@@ -84,7 +87,7 @@ impl BinaryProtocol {
         self.store(Opcode::Add, key, value, expiration, None).await
     }
 
-    pub async fn replace<V: ToMemcacheValue>(
+    pub async fn replace<V: ToMemcachedValue>(
         &mut self,
         key: &str,
         value: V,
@@ -94,7 +97,7 @@ impl BinaryProtocol {
             .await
     }
 
-    async fn send_request<T: ToMemcacheValue>(
+    async fn send_request<T: ToMemcachedValue>(
         &mut self,
         opcode: Opcode,
         key: &str,
@@ -123,7 +126,7 @@ impl BinaryProtocol {
         self.stream.flush().await.map_err(Into::into)
     }
 
-    async fn store<V: ToMemcacheValue>(
+    async fn store<V: ToMemcachedValue>(
         &mut self,
         opcode: Opcode,
         key: &str,
