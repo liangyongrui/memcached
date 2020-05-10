@@ -15,27 +15,43 @@ use values::FromMemcachedValueExt;
 #[derive(Clone)]
 pub struct Client {
     connections: Vec<Pool<ConnectionManager>>,
-    pub hash_function: fn(&str) -> usize,
+    hash_function: fn(&str) -> usize,
 }
 
 impl Client {
-    pub fn connect(url: String) -> Result<Self> {
-        Self::with_pool_size(url, 1)
+    /// 获取连接，默认连接池个数为1
+    ///
+    /// Example
+    ///
+    /// ```rust
+    /// let client = memcached::Client::connect("memcache://127.0.0.1:12345").unwrap();
+    /// ```
+    pub fn connect(url: &str) -> Result<Self> {
+        Self::connects_with(vec![url.to_owned()], 1, default_hash_function)
     }
-
-    pub fn with_pool_size(url: String, size: u64) -> Result<Self> {
-        let urls = vec![url];
+    /// 创建一个client，可以指定多个url，连接池大小，key hash连接池的函数
+    ///
+    /// Example
+    ///
+    /// ```rust
+    /// let client = memcached::Client::connects_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
+    /// ```
+    pub fn connects_with(
+        urls: Vec<String>,
+        pool_size: u64,
+        hash_function: fn(&str) -> usize,
+    ) -> Result<Self> {
         let mut connections = vec![];
         for url in urls {
             let parsed = Url::parse(url.as_str())?;
             let pool = Pool::builder()
-                .max_idle(size)
+                .max_idle(pool_size)
                 .build(ConnectionManager { url: parsed });
             connections.push(pool);
         }
         Ok(Client {
             connections,
-            hash_function: default_hash_function,
+            hash_function,
         })
     }
 
@@ -46,12 +62,12 @@ impl Client {
     }
 
     /// 获取版本号
-    /// 
+    ///
     /// Example
-    /// 
+    ///
     /// ```rust
     /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").await.unwrap();
+    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
     /// let version = client.version().await.unwrap();
     /// # });
     /// ```
