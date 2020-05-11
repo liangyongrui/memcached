@@ -1,6 +1,6 @@
 [package]
 name = "memcached"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["liangyongrui <leungyongrui@gmail.com>"]
 edition = "2018"
 description = "async memcached rust client"
