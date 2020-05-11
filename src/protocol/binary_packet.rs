@@ -1,14 +1,16 @@
 use super::code::{Magic, Opcode, OK_STATUS};
 use crate::stream::Stream;
 use crate::{
-    client::values::FromMemcachedValueExt,
+    // client::values::FromMemcachedValueExt,
     error::{CommandError, MemcachedError, ServerError},
     Result,
 };
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::ByteOrder;
+use byteorder::{BigEndian, ReadBytesExt, LittleEndian};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashMap, io::Cursor};
-
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
 pub(crate) struct PacketHeader {
     pub(crate) magic: u8,
     pub(crate) opcode: u8,
@@ -67,7 +69,7 @@ impl PacketHeader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct Response {
     header: PacketHeader,
     key: Vec<u8>,
@@ -94,13 +96,15 @@ pub(crate) async fn parse_response(reader: &mut Stream) -> Result<Response> {
     let mut key = vec![0x0; header.key_length as usize];
     reader.read_exact(key.as_mut_slice()).await?;
 
+    let value_len = (header.total_body_length
+        - u32::from(header.key_length)
+        - u32::from(header.extras_length)) as usize;
     // TODO: return error if total_body_length < extras_length + key_length
-    let mut value = vec![
-        0x0;
-        (header.total_body_length - u32::from(header.key_length) - u32::from(header.extras_length))
-            as usize
-    ];
-    reader.read_exact(value.as_mut_slice()).await?;
+    // bincode 头8个字节为数据大小
+    let mut value = vec![0x0; value_len + 8];
+    LittleEndian::write_u64(&mut value[..8], value_len as u64);
+    dbg!(value_len, &value);
+    reader.read_exact(&mut value[8..]).await?;
 
     Ok(Response {
         header,
@@ -127,7 +131,7 @@ pub(crate) async fn parse_version_response(reader: &mut Stream) -> Result<String
     Ok(String::from_utf8(value)?)
 }
 
-pub(crate) async fn parse_get_response<T: FromMemcachedValueExt>(
+pub(crate) async fn parse_get_response<T: DeserializeOwned>(
     reader: &mut Stream,
 ) -> Result<Option<T>> {
     match parse_response(reader).await?.err() {
@@ -138,21 +142,17 @@ pub(crate) async fn parse_get_response<T: FromMemcachedValueExt>(
             ..
         }) => {
             let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
-            Ok(Some(T::from_memcached_value(
-                value,
-                flags,
-                Some(header.cas),
-            )?))
+            Ok(Some(bincode::deserialize(&value).unwrap()))
         }
         Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(None),
         Err(e) => Err(e),
     }
 }
 
-pub(crate) async fn parse_gets_response<V: FromMemcachedValueExt>(
+pub(crate) async fn parse_gets_response<V: DeserializeOwned>(
     reader: &mut Stream,
     max_responses: usize,
-) -> Result<HashMap<String, V>> {
+) -> Result<HashMap<String, (V, u32, Option<u64>)>> {
     let mut result = HashMap::new();
     for _ in 0..=max_responses {
         let Response {
@@ -168,7 +168,11 @@ pub(crate) async fn parse_gets_response<V: FromMemcachedValueExt>(
         let key = String::from_utf8(key)?;
         let _ = result.insert(
             key,
-            V::from_memcached_value(value, flags, Some(header.cas))?,
+            (
+                bincode::deserialize(&value).unwrap(),
+                flags,
+                Some(header.cas),
+            ),
         );
     }
     Err(ServerError::BadResponse(Cow::Borrowed("Expected end of gets response")).into())

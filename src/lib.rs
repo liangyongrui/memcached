@@ -49,6 +49,7 @@
     clippy::cast_possible_truncation, //
     clippy::integer_arithmetic, //
     clippy::get_unwrap, //
+    clippy::indexing_slicing, //
 )]
 
 // #[macro_use]
@@ -95,26 +96,14 @@ mod tests {
     #[async_std::test]
     async fn it_works() {
         let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
-        let t = client.stats().await.unwrap();
-        dbg!(t);
-        // client.set("cas_test1", b"100", 100).await.unwrap();
-        // let t = client
-        //     .gets::<(Vec<u8>, u32, Option<u64>)>(&["cas_test1"])
-        //     .await
-        //     .unwrap();
-        // let k = t.get("cas_test1").unwrap();
-        // assert_eq!(std::str::from_utf8(&k.0).unwrap(), "100");
-        // let t = client
-        //     .cas("cas_test1", b"200", 100, k.2.unwrap() - 1)
-        //     .await
-        //     .unwrap();
-        // let t = client.get::<String>("cas_test1").await.unwrap();
-        // assert_eq!(t.unwrap(), "100".to_owned());
-        // let t = client
-        //     .cas("cas_test1", b"300", 100, k.2.unwrap())
-        //     .await
-        //     .unwrap();
-        // let t = client.get::<String>("cas_test1").await.unwrap();
-        // assert_eq!(t.unwrap(), "300".to_owned());
+        // let t = client.stats().await.unwrap();
+        // dbg!(t);
+        client
+            .set("append_test", "hello", 100)
+            .await
+            .unwrap();
+        client.append("append_test", ", 233").await.unwrap();
+        let t: Option<String> = client.get("append_test").await.unwrap();
+        assert_eq!(t, Some("hello, 233".to_owned()));
     }
 }
