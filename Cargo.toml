@@ -13,9 +13,9 @@ categories = ['memcached']
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 byteorder = "1"
-url = "2.1.1"
-async-std = { version = "1.5", features = ["attributes"] }
+url = "2"
+async-std = { version = "1", features = ["attributes"] }
 mobc = { version = "0.5", features = ["async-std"] }
-bincode = "1.2.1"
-serde = { version = "1.0.110", features = ["derive"] }
-anyhow = "*"
+bincode = "1"
+serde = { version = "1", features = ["derive"] }
+anyhow = "1"
