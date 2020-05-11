@@ -315,7 +315,7 @@ impl BinaryProtocol {
         };
         request_header.write(&mut self.stream).await?;
         self.stream.flush().await?;
-        
+
         let stats_info = binary_packet::parse_stats_response(&mut self.stream).await?;
         Ok(stats_info)
     }
