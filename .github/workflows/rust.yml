@@ -37,4 +37,4 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
       - name: Run cargo-tarpaulin
-        run: cargo install cargo-tarpaulin && cargo +nightly tarpaulin --run-types Doctests Tests
+        run: cargo install cargo-tarpaulin && cargo tarpaulin --run-types Doctests Tests

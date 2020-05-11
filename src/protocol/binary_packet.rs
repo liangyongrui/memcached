@@ -3,6 +3,7 @@ use crate::stream::Stream;
 use crate::{
     // client::values::FromMemcachedValueExt,
     error::{CommandError, MemcachedError, ServerError},
+    parse,
     Result,
 };
 use byteorder::ByteOrder;
@@ -100,11 +101,8 @@ pub(crate) async fn parse_response(reader: &mut Stream) -> Result<Response> {
         - u32::from(header.key_length)
         - u32::from(header.extras_length)) as usize;
     // TODO: return error if total_body_length < extras_length + key_length
-    // bincode 头8个字节为数据大小
-    let mut value = vec![0x0; value_len + 8];
-    LittleEndian::write_u64(&mut value[..8], value_len as u64);
-    dbg!(value_len, &value);
-    reader.read_exact(&mut value[8..]).await?;
+    let mut value = vec![0x0; value_len];
+    reader.read_exact(&mut value).await?;
 
     Ok(Response {
         header,
@@ -131,7 +129,7 @@ pub(crate) async fn parse_version_response(reader: &mut Stream) -> Result<String
     Ok(String::from_utf8(value)?)
 }
 
-pub(crate) async fn parse_get_response<T: DeserializeOwned>(
+pub(crate) async fn parse_get_response<T: DeserializeOwned + 'static>(
     reader: &mut Stream,
 ) -> Result<Option<T>> {
     match parse_response(reader).await?.err() {
@@ -141,16 +139,16 @@ pub(crate) async fn parse_get_response<T: DeserializeOwned>(
             value,
             ..
         }) => {
-            dbg!(std::str::from_utf8(&value).unwrap());
+            dbg!(&value);
             let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
-            Ok(Some(bincode::deserialize(&value).unwrap()))
+            Ok(Some(parse::deserialize_bytes(&value).unwrap()))
         }
         Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(None),
         Err(e) => Err(e),
     }
 }
 
-pub(crate) async fn parse_gets_response<V: DeserializeOwned>(
+pub(crate) async fn parse_gets_response<V: DeserializeOwned + 'static>(
     reader: &mut Stream,
     max_responses: usize,
 ) -> Result<HashMap<String, (V, u32, Option<u64>)>> {
@@ -170,7 +168,7 @@ pub(crate) async fn parse_gets_response<V: DeserializeOwned>(
         let _ = result.insert(
             key,
             (
-                bincode::deserialize(&value).unwrap(),
+                parse::deserialize_bytes(&value).unwrap(),
                 flags,
                 Some(header.cas),
             ),
@@ -189,7 +187,7 @@ pub(crate) async fn parse_delete_response(reader: &mut Stream) -> Result<bool> {
 
 pub(crate) async fn parse_counter_response(reader: &mut Stream) -> Result<u64> {
     let Response { value, .. } = parse_response(reader).await?.err()?;
-    Ok(Cursor::new(&value[8..]).read_u64::<BigEndian>()?)
+    Ok(Cursor::new(&value).read_u64::<BigEndian>()?)
 }
 
 pub(crate) async fn parse_touch_response(reader: &mut Stream) -> Result<bool> {

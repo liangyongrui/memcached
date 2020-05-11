@@ -50,6 +50,8 @@
     clippy::integer_arithmetic, //
     clippy::get_unwrap, //
     clippy::indexing_slicing, //
+    clippy::wildcard_dependencies,//
+    dead_code,//
 )]
 
 // #[macro_use]
@@ -58,8 +60,8 @@
 mod client;
 mod connection;
 pub mod error;
-mod protocol;
 mod parse;
+mod protocol;
 mod stream;
 
 pub type Result<T> = std::result::Result<T, error::MemcachedError>;
@@ -96,6 +98,19 @@ pub fn connects_withconnects_with(
 mod tests {
     #[async_std::test]
     async fn it_works() {
-        let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
+        async_std::task::block_on(async {
+            async fn foo() -> crate::Result<()> {
+                let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
+                // client.set("increment_test", 100, 100).await?;
+                // dbg!("@@#");
+                // let t = client.increment("increment_test", 10).await?;
+                // dbg!("@@#");
+                // assert_eq!(120, client.increment("increment_test", 10).await?);
+                // let t: Option<u64> = client.get("increment_test").await?;
+                // assert_eq!(t, Some(120));
+                Ok(())
+            }
+            dbg!(foo().await.unwrap());
+        });
     }
 }

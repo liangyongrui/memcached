@@ -1,11 +1,10 @@
 pub(crate) mod binary_packet;
 mod code;
 use self::binary_packet::PacketHeader;
-use crate::{stream::Stream, Result};
+use crate::{parse, stream::Stream, Result};
 use code::{Magic, Opcode};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{any::TypeId, collections::HashMap};
-
 pub(crate) struct BinaryProtocol {
     pub(crate) stream: Stream,
 }
@@ -74,7 +73,10 @@ impl BinaryProtocol {
             .map(|_| ())
     }
 
-    pub(crate) async fn get<V: DeserializeOwned>(&mut self, key: &str) -> Result<Option<V>> {
+    pub(crate) async fn get<V: DeserializeOwned + 'static>(
+        &mut self,
+        key: &str,
+    ) -> Result<Option<V>> {
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Get as u8,
@@ -154,21 +156,8 @@ impl BinaryProtocol {
         expiration: u32,
         cas: Option<u64>,
     ) -> Result<()> {
-        let value = bincode::serialize(&value).unwrap();
-        let value_type_id = TypeId::of::<V>();
-        let skip = 8;
-        // let skip = if TypeId::of::<String>() == value_type_id
-        //     || TypeId::of::<&str>() == value_type_id
-        //     || TypeId::of::<&String>() == value_type_id
-        //     || TypeId::of::<str>() == value_type_id
-        // {
-        //     dbg!("##########");
-        //     8
-        // } else {
-        //     dbg!("@@@@@@@@");
-        //     0
-        // };
-        self.send_request(opcode, key, &value[skip..], expiration, cas)
+        let value = parse::serialize_bytes(&value).unwrap();
+        self.send_request(opcode, key, &value, expiration, cas)
             .await?;
         binary_packet::parse_response(&mut self.stream)
             .await?
@@ -176,8 +165,12 @@ impl BinaryProtocol {
             .map(|_| ())
     }
 
-    pub(crate) async fn append<V: Serialize>(&mut self, key: &str, value: V) -> Result<()> {
-        let value = &bincode::serialize(&value).unwrap()[8..];
+    pub(crate) async fn append<V: Serialize + 'static>(
+        &mut self,
+        key: &str,
+        value: V,
+    ) -> Result<()> {
+        let value = parse::serialize_bytes(&value).unwrap();
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Append as u8,
@@ -187,7 +180,7 @@ impl BinaryProtocol {
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_all(key.as_bytes()).await?;
-        self.stream.write_all(value).await?;
+        self.stream.write_all(&value).await?;
         self.stream.flush().await?;
         binary_packet::parse_response(&mut self.stream)
             .await?
@@ -195,7 +188,7 @@ impl BinaryProtocol {
             .map(|_| ())
     }
 
-    pub(crate) async fn cas<V: Serialize>(
+    pub(crate) async fn cas<V: Serialize + 'static>(
         &mut self,
         key: &str,
         value: V,
@@ -205,7 +198,7 @@ impl BinaryProtocol {
         self.send_request(
             Opcode::Set,
             key,
-            &bincode::serialize(&value).unwrap()[8..],
+            &parse::serialize_bytes(&value).unwrap(),
             expiration,
             Some(cas),
         )
@@ -213,8 +206,12 @@ impl BinaryProtocol {
         binary_packet::parse_cas_response(&mut self.stream).await
     }
 
-    pub(crate) async fn prepend<V: Serialize>(&mut self, key: &str, value: V) -> Result<()> {
-        let value = &bincode::serialize(&value).unwrap()[8..];
+    pub(crate) async fn prepend<V: Serialize + 'static>(
+        &mut self,
+        key: &str,
+        value: V,
+    ) -> Result<()> {
+        let value = parse::serialize_bytes(&value).unwrap();
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Prepend as u8,
@@ -224,7 +221,7 @@ impl BinaryProtocol {
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_all(key.as_bytes()).await?;
-        self.stream.write_all(value).await?;
+        self.stream.write_all(&value).await?;
         self.stream.flush().await?;
         binary_packet::parse_response(&mut self.stream)
             .await
@@ -320,7 +317,7 @@ impl BinaryProtocol {
         Ok(stats_info)
     }
 
-    pub(crate) async fn gets<V: DeserializeOwned>(
+    pub(crate) async fn gets<V: DeserializeOwned + 'static>(
         &mut self,
         keys: &[&str],
     ) -> Result<HashMap<String, (V, u32, Option<u64>)>> {

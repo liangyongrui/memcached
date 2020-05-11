@@ -87,7 +87,7 @@ impl Client {
     /// assert_eq!(t, None);
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn get<V: DeserializeOwned>(&self, key: &str) -> Result<Option<V>> {
+    pub async fn get<V: DeserializeOwned + 'static>(&self, key: &str) -> Result<Option<V>> {
         check::check_key_len(key)?;
         self.get_connection(key).get().await?.get(key).await
     }
@@ -233,7 +233,7 @@ impl Client {
     /// assert_eq!(t, Some("hello, 233".to_owned()));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn append<V: Serialize>(&self, key: &str, value: V) -> Result<()> {
+    pub async fn append<V: Serialize + 'static>(&self, key: &str, value: V) -> Result<()> {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -254,7 +254,7 @@ impl Client {
     /// assert_eq!(t, Some("233! hello".to_owned()));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn prepend<V: Serialize>(&self, key: &str, value: V) -> Result<()> {
+    pub async fn prepend<V: Serialize + 'static>(&self, key: &str, value: V) -> Result<()> {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -290,11 +290,11 @@ impl Client {
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
     /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
-    /// client.set("increment_test", "100", 100).await?;
+    /// client.set("increment_test", 100, 100).await?;
     /// client.increment("increment_test", 10).await?;
     /// assert_eq!(120, client.increment("increment_test", 10).await.unwrap());
-    /// let t: Option<String> = client.get("increment_test").await?;
-    /// assert_eq!(t, Some("120".to_owned()));
+    /// let t: Option<u64> = client.get("increment_test").await?;
+    /// assert_eq!(t, Some(120));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn increment(&self, key: &str, amount: u64) -> Result<u64> {
@@ -313,11 +313,11 @@ impl Client {
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
     /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
-    /// client.set("decrement_test", "100", 100).await?;
+    /// client.set("decrement_test", 100, 100).await?;
     /// let t = client.decrement("decrement_test", 10).await?;
     /// assert_eq!(80, client.decrement("decrement_test", 10).await.unwrap());
-    /// let t: Option<String> = client.get("decrement_test").await?;
-    /// assert_eq!(t.unwrap().trim(), "80");
+    /// let t: Option<u64> = client.get("decrement_test").await?;
+    /// assert_eq!(t.unwrap(), 80);
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn decrement(&self, key: &str, amount: u64) -> Result<u64> {
@@ -360,14 +360,13 @@ impl Client {
     ///
     /// ## Example
     ///
-    /// ```no_run
+    /// ```
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
     /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
-    /// // let t = client.stats().await?;
+    /// let t = client.stats().await?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    #[allow(dead_code)]
-    pub(crate) async fn stats(&self) -> Result<Vec<(String, HashMap<String, String>)>> {
+    pub async fn stats(&self) -> Result<Vec<(String, HashMap<String, String>)>> {
         let mut result: Vec<(String, HashMap<String, String>)> = vec![];
         for connection in &self.connections {
             let mut connection = connection.get().await?;
@@ -392,7 +391,7 @@ impl Client {
     ///    .unwrap();;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn gets<V: DeserializeOwned>(
+    pub async fn gets<V: DeserializeOwned + 'static>(
         &self,
         keys: &[&str],
     ) -> Result<HashMap<String, (V, u32, Option<u64>)>> {
@@ -444,7 +443,7 @@ impl Client {
     /// assert_eq!(t.unwrap(), "300".to_owned());;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn cas<V: Serialize>(
+    pub async fn cas<V: Serialize + 'static>(
         &self,
         key: &str,
         value: V,
