@@ -59,6 +59,7 @@ mod client;
 mod connection;
 pub mod error;
 mod protocol;
+mod parse;
 mod stream;
 
 pub type Result<T> = std::result::Result<T, error::MemcachedError>;
