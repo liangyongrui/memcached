@@ -22,7 +22,9 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// let client = memcached::Client::connect("memcache://127.0.0.1:12345").unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::Client::connect("memcache://127.0.0.1:12345")?;
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub fn connect(url: &str) -> Result<Self> {
         Self::connects_with(vec![url.to_owned()], 1, default_hash_function)
@@ -32,7 +34,9 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// let client = memcached::Client::connects_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::Client::connects_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1)?;
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub fn connects_with(
         urls: Vec<String>,
@@ -58,10 +62,10 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// let version = client.version().await.unwrap();
-    /// # });
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let version = client.version().await?;
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn version(&self) -> Result<Vec<String>> {
         let mut result = Vec::with_capacity(self.connections.len());
@@ -77,11 +81,11 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// let t: Option<String> = client.get("get_none").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let t: Option<String> = client.get("get_none").await?;
     /// assert_eq!(t, None);
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn get<V: DeserializeOwned>(&self, key: &str) -> Result<Option<V>> {
         check::check_key_len(key)?;
@@ -93,14 +97,19 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("abc", "hello", 100).await.unwrap();
-    /// let t: Option<String> = client.get("abc").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("abc", "hello", 100).await?;
+    /// let t: Option<String> = client.get("abc").await?;
     /// assert_eq!(t, Some("hello".to_owned()));
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn set<V: Serialize>(&self, key: &str, value: V, expiration: u32) -> Result<()> {
+    pub async fn set<V: Serialize + 'static>(
+        &self,
+        key: &str,
+        value: V,
+        expiration: u32,
+    ) -> Result<()> {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -114,13 +123,13 @@ impl Client {
     /// ## Example
     ///
     /// ```no_run
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("flush_test", "hello", 100).await.unwrap();
-    /// client.flush().await.unwrap();
-    /// let t: Option<String> = client.get("flush_test").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("flush_test", "hello", 100).await?;
+    /// client.flush().await?;
+    /// let t: Option<String> = client.get("flush_test").await?;
     /// assert_eq!(t, None);
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn flush(&self) -> Result<()> {
         for connection in &self.connections {
@@ -134,16 +143,16 @@ impl Client {
     /// ## Example
     ///
     /// ```no_run
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("flush_with_delay_test", "hello", 100).await.unwrap();
-    /// client.flush_with_delay(2).await.unwrap();
-    /// let t: Option<String> = client.get("flush_with_delay_test").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("flush_with_delay_test", "hello", 100).await?;
+    /// client.flush_with_delay(2).await?;
+    /// let t: Option<String> = client.get("flush_with_delay_test").await?;
     /// assert_eq!(t, Some("hello".to_owned()));
     /// async_std::task::sleep(core::time::Duration::from_secs(2)).await;
-    /// let t: Option<String> = client.get("flush_with_delay_test").await.unwrap();
+    /// let t: Option<String> = client.get("flush_with_delay_test").await?;
     /// assert_eq!(t, None);
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn flush_with_delay(&self, delay: u32) -> Result<()> {
         for connection in &self.connections {
@@ -157,17 +166,22 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.delete("add_test").await.unwrap();
-    /// client.add("add_test", "hello", 100).await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.delete("add_test").await?;
+    /// client.add("add_test", "hello", 100).await?;
     /// // repeat add KeyExists
     /// client.add("add_test", "hello233", 100).await.unwrap_err();
-    /// let t: Option<String> = client.get("add_test").await.unwrap();
+    /// let t: Option<String> = client.get("add_test").await?;
     /// assert_eq!(t, Some("hello".to_owned()));
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn add<V: Serialize>(&self, key: &str, value: V, expiration: u32) -> Result<()> {
+    pub async fn add<V: Serialize + 'static>(
+        &self,
+        key: &str,
+        value: V,
+        expiration: u32,
+    ) -> Result<()> {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -181,18 +195,23 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.delete("replace_test").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.delete("replace_test").await?;
     /// // KeyNotFound
     /// client.replace("replace_test", "hello", 100).await.unwrap_err();
-    /// client.add("replace_test", "hello", 100).await.unwrap();
-    /// client.replace("replace_test", "hello233", 100).await.unwrap();
-    /// let t: Option<String> = client.get("replace_test").await.unwrap();
+    /// client.add("replace_test", "hello", 100).await?;
+    /// client.replace("replace_test", "hello233", 100).await?;
+    /// let t: Option<String> = client.get("replace_test").await?;
     /// assert_eq!(t, Some("hello233".to_owned()));
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn replace<V: Serialize>(&self, key: &str, value: V, expiration: u32) -> Result<()> {
+    pub async fn replace<V: Serialize + 'static>(
+        &self,
+        key: &str,
+        value: V,
+        expiration: u32,
+    ) -> Result<()> {
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -206,13 +225,13 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("append_test", "hello", 100).await.unwrap();
-    /// client.append("append_test", ", 233").await.unwrap();
-    /// let t: Option<String> = client.get("append_test").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("append_test", "hello", 100).await?;
+    /// client.append("append_test", ", 233").await?;
+    /// let t: Option<String> = client.get("append_test").await?;
     /// assert_eq!(t, Some("hello, 233".to_owned()));
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn append<V: Serialize>(&self, key: &str, value: V) -> Result<()> {
         check::check_key_len(key)?;
@@ -227,13 +246,13 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("prepend_test", "hello", 100).await.unwrap();
-    /// client.prepend("prepend_test", "233! ").await.unwrap();
-    /// let t: Option<String> = client.get("prepend_test").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("prepend_test", "hello", 100).await?;
+    /// client.prepend("prepend_test", "233! ").await?;
+    /// let t: Option<String> = client.get("prepend_test").await?;
     /// assert_eq!(t, Some("233! hello".to_owned()));
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn prepend<V: Serialize>(&self, key: &str, value: V) -> Result<()> {
         check::check_key_len(key)?;
@@ -249,15 +268,15 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.add("delete_test", "hello", 100).await.unwrap();
-    /// let t: Option<String> = client.get("delete_test").await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.add("delete_test", "hello", 100).await?;
+    /// let t: Option<String> = client.get("delete_test").await?;
     /// assert_eq!(t, Some("hello".to_owned()));
-    /// client.delete("delete_test").await.unwrap();
-    /// let t: Option<String> = client.get("delete_test").await.unwrap();
+    /// client.delete("delete_test").await?;
+    /// let t: Option<String> = client.get("delete_test").await?;
     /// assert_eq!(t, None);
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn delete(&self, key: &str) -> Result<bool> {
         check::check_key_len(key)?;
@@ -269,14 +288,14 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("increment_test", "100", 100).await.unwrap();
-    /// client.increment("increment_test", 10).await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("increment_test", "100", 100).await?;
+    /// client.increment("increment_test", 10).await?;
     /// assert_eq!(120, client.increment("increment_test", 10).await.unwrap());
-    /// let t: Option<String> = client.get("increment_test").await.unwrap();
+    /// let t: Option<String> = client.get("increment_test").await?;
     /// assert_eq!(t, Some("120".to_owned()));
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn increment(&self, key: &str, amount: u64) -> Result<u64> {
         check::check_key_len(key)?;
@@ -292,14 +311,14 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("decrement_test", "100", 100).await.unwrap();
-    /// client.decrement("decrement_test", 10).await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("decrement_test", "100", 100).await?;
+    /// let t = client.decrement("decrement_test", 10).await?;
     /// assert_eq!(80, client.decrement("decrement_test", 10).await.unwrap());
-    /// let t: Option<u64> = client.get("decrement_test").await.unwrap();
-    /// assert_eq!(t, Some(80));
-    /// # });
+    /// let t: Option<String> = client.get("decrement_test").await?;
+    /// assert_eq!(t.unwrap().trim(), "80");
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn decrement(&self, key: &str, amount: u64) -> Result<u64> {
         check::check_key_len(key)?;
@@ -315,17 +334,17 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("touch_test", "100", 100).await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("touch_test", "100", 100).await?;
     /// async_std::task::sleep(core::time::Duration::from_secs(1)).await;
-    /// let t: Option<String> = client.get("touch_test").await.unwrap();
+    /// let t: Option<String> = client.get("touch_test").await?;
     /// assert_eq!(t, Some("100".to_owned()));
-    /// client.touch("touch_test", 1).await.unwrap();
+    /// client.touch("touch_test", 1).await?;
     /// async_std::task::sleep(core::time::Duration::from_secs(1)).await;
-    /// let t: Option<String> = client.get("touch_test").await.unwrap();
+    /// let t: Option<String> = client.get("touch_test").await?;
     /// assert_eq!(t, None);
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn touch(&self, key: &str, expiration: u32) -> Result<bool> {
         check::check_key_len(key)?;
@@ -337,16 +356,18 @@ impl Client {
     }
 
     /// Get all servers' statistics.
+    /// 暂时不可用
     ///
     /// ## Example
     ///
-    /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// let t = client.stats().await.unwrap();
-    /// # });
+    /// ```no_run
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// // let t = client.stats().await?;
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn stats(&self) -> Result<Vec<(String, HashMap<String, String>)>> {
+    #[allow(dead_code)]
+    pub(crate) async fn stats(&self) -> Result<Vec<(String, HashMap<String, String>)>> {
         let mut result: Vec<(String, HashMap<String, String>)> = vec![];
         for connection in &self.connections {
             let mut connection = connection.get().await?;
@@ -361,15 +382,15 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("gets_test1", "100", 100).await.unwrap();
-    /// client.set("gets_test2", "200", 100).await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("gets_test1", "100", 100).await?;
+    /// client.set("gets_test2", "200", 100).await?;
     /// let t = client
     ///    .gets::<String>(&["gets_test1", "gets_test2"])
     ///    .await
     ///    .unwrap();;
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn gets<V: DeserializeOwned>(
         &self,
@@ -400,28 +421,28 @@ impl Client {
     /// ## Example
     ///
     /// ```rust
-    /// # async_std::task::block_on(async {
-    /// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
-    /// client.set("cas_test1", "100", 100).await.unwrap();
+    /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
+    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// client.set("cas_test1", "100", 100).await?;
     /// let t = client
     ///     .gets::<String>(&["cas_test1"])
     ///     .await
-    ///     .unwrap();
+    ///     ?;
     /// let k = t.get("cas_test1").unwrap();
     /// assert_eq!(&k.0, "100");
     /// let t = client
     ///     .cas("cas_test1", "200", 100, k.2.unwrap() - 1)
     ///     .await
-    ///     .unwrap();
-    /// let t = client.get::<String>("cas_test1").await.unwrap();
+    ///     ?;
+    /// let t = client.get::<String>("cas_test1").await?;
     /// assert_eq!(t.unwrap(), "100".to_owned());
     /// let t = client
     ///     .cas("cas_test1", "300", 100, k.2.unwrap())
     ///     .await
-    ///     .unwrap();
-    /// let t = client.get::<String>("cas_test1").await.unwrap();
+    ///     ?;
+    /// let t = client.get::<String>("cas_test1").await?;
     /// assert_eq!(t.unwrap(), "300".to_owned());;
-    /// # });
+    /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub async fn cas<V: Serialize>(
         &self,

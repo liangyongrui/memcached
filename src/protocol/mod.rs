@@ -4,7 +4,7 @@ use self::binary_packet::PacketHeader;
 use crate::{stream::Stream, Result};
 use code::{Magic, Opcode};
 use serde::{de::DeserializeOwned, Serialize};
-use std::collections::HashMap;
+use std::{any::TypeId, collections::HashMap};
 
 pub(crate) struct BinaryProtocol {
     pub(crate) stream: Stream,
@@ -88,7 +88,7 @@ impl BinaryProtocol {
         binary_packet::parse_get_response(&mut self.stream).await
     }
 
-    pub(crate) async fn set<V: Serialize>(
+    pub(crate) async fn set<V: Serialize + 'static>(
         &mut self,
         key: &str,
         value: V,
@@ -97,7 +97,7 @@ impl BinaryProtocol {
         self.store(Opcode::Set, key, value, expiration, None).await
     }
 
-    pub(crate) async fn add<V: Serialize>(
+    pub(crate) async fn add<V: Serialize + 'static>(
         &mut self,
         key: &str,
         value: V,
@@ -106,7 +106,7 @@ impl BinaryProtocol {
         self.store(Opcode::Add, key, value, expiration, None).await
     }
 
-    pub(crate) async fn replace<V: Serialize>(
+    pub(crate) async fn replace<V: Serialize + 'static>(
         &mut self,
         key: &str,
         value: V,
@@ -146,7 +146,7 @@ impl BinaryProtocol {
         self.stream.flush().await.map_err(Into::into)
     }
 
-    async fn store<V: Serialize>(
+    async fn store<V: Serialize + 'static>(
         &mut self,
         opcode: Opcode,
         key: &str,
@@ -154,14 +154,22 @@ impl BinaryProtocol {
         expiration: u32,
         cas: Option<u64>,
     ) -> Result<()> {
-        self.send_request(
-            opcode,
-            key,
-            &bincode::serialize(&value).unwrap()[8..],
-            expiration,
-            cas,
-        )
-        .await?;
+        let value = bincode::serialize(&value).unwrap();
+        let value_type_id = TypeId::of::<V>();
+        let skip = 8;
+        // let skip = if TypeId::of::<String>() == value_type_id
+        //     || TypeId::of::<&str>() == value_type_id
+        //     || TypeId::of::<&String>() == value_type_id
+        //     || TypeId::of::<str>() == value_type_id
+        // {
+        //     dbg!("##########");
+        //     8
+        // } else {
+        //     dbg!("@@@@@@@@");
+        //     0
+        // };
+        self.send_request(opcode, key, &value[skip..], expiration, cas)
+            .await?;
         binary_packet::parse_response(&mut self.stream)
             .await?
             .err()
@@ -307,6 +315,7 @@ impl BinaryProtocol {
         };
         request_header.write(&mut self.stream).await?;
         self.stream.flush().await?;
+        
         let stats_info = binary_packet::parse_stats_response(&mut self.stream).await?;
         Ok(stats_info)
     }

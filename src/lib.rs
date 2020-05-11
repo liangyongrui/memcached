@@ -96,14 +96,5 @@ mod tests {
     #[async_std::test]
     async fn it_works() {
         let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
-        // let t = client.stats().await.unwrap();
-        // dbg!(t);
-        client
-            .set("append_test", "hello", 100)
-            .await
-            .unwrap();
-        client.append("append_test", ", 233").await.unwrap();
-        let t: Option<String> = client.get("append_test").await.unwrap();
-        assert_eq!(t, Some("hello, 233".to_owned()));
     }
 }

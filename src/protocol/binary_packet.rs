@@ -6,7 +6,7 @@ use crate::{
     Result,
 };
 use byteorder::ByteOrder;
-use byteorder::{BigEndian, ReadBytesExt, LittleEndian};
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashMap, io::Cursor};
@@ -141,6 +141,7 @@ pub(crate) async fn parse_get_response<T: DeserializeOwned>(
             value,
             ..
         }) => {
+            dbg!(std::str::from_utf8(&value).unwrap());
             let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
             Ok(Some(bincode::deserialize(&value).unwrap()))
         }
@@ -188,7 +189,7 @@ pub(crate) async fn parse_delete_response(reader: &mut Stream) -> Result<bool> {
 
 pub(crate) async fn parse_counter_response(reader: &mut Stream) -> Result<u64> {
     let Response { value, .. } = parse_response(reader).await?.err()?;
-    Ok(Cursor::new(value).read_u64::<BigEndian>()?)
+    Ok(Cursor::new(&value[8..]).read_u64::<BigEndian>()?)
 }
 
 pub(crate) async fn parse_touch_response(reader: &mut Stream) -> Result<bool> {
