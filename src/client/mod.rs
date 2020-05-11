@@ -3,10 +3,10 @@ mod client_hash;
 pub(crate) mod connectable;
 
 use crate::connection::ConnectionManager;
-use crate::Result;
+use crate::{error::ClientError, Result};
 use client_hash::default_hash_function;
 use mobc::Pool;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use url::Url;
 
@@ -50,6 +50,9 @@ impl Client {
                 .max_idle(pool_size)
                 .build(ConnectionManager { url: parsed });
             connections.push(pool);
+        }
+        if connections.is_empty() {
+            return Err(ClientError::ConnectionsIsEmpty.into());
         }
         Ok(Client {
             connections,
@@ -408,8 +411,9 @@ impl Client {
             array.push(key);
         }
         for (&connection_index, keys) in &con_keys {
-            let connection = self.connections.get(connection_index).unwrap();
-            result.extend(connection.get().await?.gets(keys).await?);
+            if let Some(connection) = self.connections.get(connection_index) {
+                result.extend(connection.get().await?.gets(keys).await?);
+            }
         }
         Ok(result)
     }
@@ -458,9 +462,12 @@ impl Client {
             .await
     }
 
+    /// index < len
+    /// 没有风险
+    #[allow(clippy::indexing_slicing)]
     fn get_connection(&self, key: &str) -> &Pool<ConnectionManager> {
         let connections_count = self.connections.len();
         let hash = (self.hash_function)(key) % connections_count;
-        self.connections.get(hash).unwrap()
+        &self.connections[hash]
     }
 }

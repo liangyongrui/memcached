@@ -60,7 +60,7 @@ impl Manager for ConnectionManager {
         let mut connection = Connection::connect(url).await?;
         if url.has_authority() && !url.username().is_empty() && url.password().is_some() {
             let username = url.username();
-            let password = url.password().unwrap();
+            let password = url.password().unwrap_or("");
             connection.auth(username, password).await?;
         }
         Ok(connection)

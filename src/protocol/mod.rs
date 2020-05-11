@@ -4,7 +4,7 @@ use self::binary_packet::PacketHeader;
 use crate::{parse, stream::Stream, Result};
 use code::{Magic, Opcode};
 use serde::{de::DeserializeOwned, Serialize};
-use std::{any::TypeId, collections::HashMap};
+use std::collections::HashMap;
 pub(crate) struct BinaryProtocol {
     pub(crate) stream: Stream,
 }
@@ -17,7 +17,7 @@ impl BinaryProtocol {
             opcode: Opcode::StartAuth as u8,
             key_length: key.len() as u16,
             total_body_length: (key.len() + username.len() + password.len() + 2) as u32,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_all(key.as_bytes()).await?;
@@ -33,7 +33,7 @@ impl BinaryProtocol {
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Version as u8,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.flush().await?;
@@ -45,7 +45,7 @@ impl BinaryProtocol {
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Flush as u8,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.flush().await?;
@@ -62,7 +62,7 @@ impl BinaryProtocol {
             opcode: Opcode::Flush as u8,
             extras_length: 4,
             total_body_length: 4,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_u32(delay).await?;
@@ -82,7 +82,7 @@ impl BinaryProtocol {
             opcode: Opcode::Get as u8,
             key_length: key.len() as u16,
             total_body_length: key.len() as u32,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_all(key.as_bytes()).await?;
@@ -133,7 +133,7 @@ impl BinaryProtocol {
             extras_length: 8,
             total_body_length: (8 + key.len() + value.len()) as u32,
             cas: cas.unwrap_or(0),
-            ..Default::default()
+            ..PacketHeader::default()
         };
         let extras = binary_packet::StoreExtras {
             flags: 0,
@@ -156,7 +156,7 @@ impl BinaryProtocol {
         expiration: u32,
         cas: Option<u64>,
     ) -> Result<()> {
-        let value = parse::serialize_bytes(&value).unwrap();
+        let value = parse::serialize_bytes(&value)?;
         self.send_request(opcode, key, &value, expiration, cas)
             .await?;
         binary_packet::parse_response(&mut self.stream)
@@ -170,13 +170,13 @@ impl BinaryProtocol {
         key: &str,
         value: V,
     ) -> Result<()> {
-        let value = parse::serialize_bytes(&value).unwrap();
+        let value = parse::serialize_bytes(&value)?;
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Append as u8,
             key_length: key.len() as u16,
             total_body_length: (key.len() + value.len()) as u32,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_all(key.as_bytes()).await?;
@@ -198,7 +198,7 @@ impl BinaryProtocol {
         self.send_request(
             Opcode::Set,
             key,
-            &parse::serialize_bytes(&value).unwrap(),
+            &parse::serialize_bytes(&value)?,
             expiration,
             Some(cas),
         )
@@ -211,13 +211,13 @@ impl BinaryProtocol {
         key: &str,
         value: V,
     ) -> Result<()> {
-        let value = parse::serialize_bytes(&value).unwrap();
+        let value = parse::serialize_bytes(&value)?;
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Prepend as u8,
             key_length: key.len() as u16,
             total_body_length: (key.len() + value.len()) as u32,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_all(key.as_bytes()).await?;
@@ -234,7 +234,7 @@ impl BinaryProtocol {
             opcode: Opcode::Delete as u8,
             key_length: key.len() as u16,
             total_body_length: key.len() as u32,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_all(key.as_bytes()).await?;
@@ -249,7 +249,7 @@ impl BinaryProtocol {
             key_length: key.len() as u16,
             extras_length: 20,
             total_body_length: (20 + key.len()) as u32,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         let extras = binary_packet::CounterExtras {
             amount,
@@ -272,7 +272,7 @@ impl BinaryProtocol {
             key_length: key.len() as u16,
             extras_length: 20,
             total_body_length: (20 + key.len()) as u32,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         let extras = binary_packet::CounterExtras {
             amount,
@@ -295,7 +295,7 @@ impl BinaryProtocol {
             key_length: key.len() as u16,
             extras_length: 4,
             total_body_length: (key.len() as u32 + 4),
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.write_u32(expiration).await?;
@@ -308,7 +308,7 @@ impl BinaryProtocol {
         let request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Stat as u8,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         request_header.write(&mut self.stream).await?;
         self.stream.flush().await?;
@@ -327,7 +327,7 @@ impl BinaryProtocol {
                 opcode: Opcode::GetKQ as u8,
                 key_length: key.len() as u16,
                 total_body_length: key.len() as u32,
-                ..Default::default()
+                ..PacketHeader::default()
             };
             request_header.write(&mut self.stream).await?;
             self.stream.write_all(key.as_bytes()).await?;
@@ -335,7 +335,7 @@ impl BinaryProtocol {
         let noop_request_header = PacketHeader {
             magic: Magic::Request as u8,
             opcode: Opcode::Noop as u8,
-            ..Default::default()
+            ..PacketHeader::default()
         };
         noop_request_header.write(&mut self.stream).await?;
         binary_packet::parse_gets_response(&mut self.stream, keys.len()).await

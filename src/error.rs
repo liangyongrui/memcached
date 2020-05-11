@@ -13,12 +13,15 @@ pub enum ClientError {
     KeyTooLong,
     /// The server returned an error prefixed with CLIENT_ERROR in response to a command.
     Error(Cow<'static, str>),
+    ///connections is empty
+    ConnectionsIsEmpty,
 }
 
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ClientError::KeyTooLong => write!(f, "The provided key was too long."),
+            ClientError::ConnectionsIsEmpty => write!(f, "The Connections is empty."),
             ClientError::Error(s) => write!(f, "{}", s),
         }
     }
@@ -158,6 +161,7 @@ pub enum ParseError {
     String(string::FromUtf8Error),
     Str(std::str::Utf8Error),
     Url(url::ParseError),
+    Bincode(bincode::Error),
 }
 
 impl error::Error for ParseError {
@@ -169,6 +173,7 @@ impl error::Error for ParseError {
             ParseError::String(ref e) => e.source(),
             ParseError::Str(ref e) => e.source(),
             ParseError::Url(ref e) => e.source(),
+            ParseError::Bincode(ref e) => e.source(),
         }
     }
 }
@@ -182,6 +187,7 @@ impl fmt::Display for ParseError {
             ParseError::String(ref e) => e.fmt(f),
             ParseError::Str(ref e) => e.fmt(f),
             ParseError::Url(ref e) => e.fmt(f),
+            ParseError::Bincode(ref e) => e.fmt(f),
         }
     }
 }
@@ -292,6 +298,12 @@ impl From<io::Error> for MemcachedError {
 impl<T> From<mobc::Error<T>> for MemcachedError {
     fn from(_: mobc::Error<T>) -> MemcachedError {
         MemcachedError::PoolError("mobc error")
+    }
+}
+
+impl From<bincode::Error> for MemcachedError {
+    fn from(e: bincode::Error) -> MemcachedError {
+        MemcachedError::ParseError(ParseError::Bincode(e))
     }
 }
 

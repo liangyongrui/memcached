@@ -9,7 +9,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use std::any::{Any, TypeId};
 
 /// 对于字符串，跳过前8个字节
-pub(crate) fn serialize_bytes<T: 'static>(value: &T) -> anyhow::Result<Vec<u8>>
+pub(crate) fn serialize_bytes<T: 'static>(value: &T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
@@ -20,7 +20,7 @@ where
 }
 
 /// 反序列化, 如果可以视为字符串，则用小端表示，把字符串前面增加8个字节, 表示长度
-pub(crate) fn deserialize_bytes<T>(bytes: &[u8]) -> anyhow::Result<T>
+pub(crate) fn deserialize_bytes<T>(bytes: &[u8]) -> Result<T>
 where
     T: serde::de::DeserializeOwned + 'static,
 {
@@ -38,7 +38,7 @@ where
 }
 
 /// 如果是数字，则返回对于的数字，否反正对应的类型
-fn try_parse_number<T>(bytes: &[u8]) -> anyhow::Result<T>
+fn try_parse_number<T>(bytes: &[u8]) -> Result<T>
 where
     T: serde::de::DeserializeOwned + 'static,
 {

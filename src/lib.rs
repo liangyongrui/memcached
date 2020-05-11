@@ -28,34 +28,19 @@
     clippy::pedantic
 )]
 #![allow(
-    unused_imports,
     clippy::missing_inline_in_public_items,
     clippy::missing_errors_doc,
-    unused_variables,
     clippy::module_name_repetitions,
     clippy::missing_docs_in_private_items,
     clippy::implicit_return,
-    clippy::wildcard_enum_match_arm,
     clippy::as_conversions,
-    clippy::similar_names,
     clippy::dbg_macro,
-    clippy::default_trait_access,
-    //
     clippy::pub_enum_variant_names,
     clippy::multiple_crate_versions,
     clippy::doc_markdown,
-    clippy::result_unwrap_used, //
-    clippy::option_unwrap_used, //
     clippy::cast_possible_truncation, //
     clippy::integer_arithmetic, //
-    clippy::get_unwrap, //
-    clippy::indexing_slicing, //
-    clippy::wildcard_dependencies,//
-    dead_code,//
 )]
-
-// #[macro_use]
-// extern crate anyhow;
 
 mod client;
 mod connection;
@@ -94,18 +79,19 @@ pub fn connects_withconnects_with(
     Client::connects_with(urls, pool_size, hash_function)
 }
 
+#[allow(clippy::result_unwrap_used)]
 #[cfg(test)]
 mod tests {
     #[async_std::test]
     async fn it_works() {
         async_std::task::block_on(async {
             async fn foo() -> crate::Result<()> {
-                let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
-                // client.set("increment_test", 100, 100).await?;
-                // let t = client.increment("increment_test", 10).await?;
-                // assert_eq!(120, client.increment("increment_test", 10).await?);
-                // let t: Option<u64> = client.get("increment_test").await?;
-                // assert_eq!(t, Some(120));
+                let _client = crate::connect("memcache://127.0.0.1:12345")?; //.unwrap();
+                                                                             // client.set("increment_test", 100, 100).await?;
+                                                                             // let t = client.increment("increment_test", 10).await?;
+                                                                             // assert_eq!(120, client.increment("increment_test", 10).await?);
+                                                                             // let t: Option<u64> = client.get("increment_test").await?;
+                                                                             // assert_eq!(t, Some(120));
                 Ok(())
             }
             dbg!(foo().await.unwrap());

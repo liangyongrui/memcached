@@ -6,8 +6,7 @@ use crate::{
     parse,
     Result,
 };
-use byteorder::ByteOrder;
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashMap, io::Cursor};
@@ -90,22 +89,22 @@ impl Response {
 }
 
 pub(crate) async fn parse_response(reader: &mut Stream) -> Result<Response> {
-    let header = PacketHeader::read(reader).await?;
-    let mut extras = vec![0x0; header.extras_length as usize];
+    let head = PacketHeader::read(reader).await?;
+    let mut extras = vec![0x0; head.extras_length as usize];
     reader.read_exact(extras.as_mut_slice()).await?;
 
-    let mut key = vec![0x0; header.key_length as usize];
+    let mut key = vec![0x0; head.key_length as usize];
     reader.read_exact(key.as_mut_slice()).await?;
 
-    let value_len = (header.total_body_length
-        - u32::from(header.key_length)
-        - u32::from(header.extras_length)) as usize;
+    let value_len = (head.total_body_length
+        - u32::from(head.key_length)
+        - u32::from(head.extras_length)) as usize;
     // TODO: return error if total_body_length < extras_length + key_length
     let mut value = vec![0x0; value_len];
     reader.read_exact(&mut value).await?;
 
     Ok(Response {
-        header,
+        header: head,
         key,
         extras,
         value,
@@ -133,15 +132,7 @@ pub(crate) async fn parse_get_response<T: DeserializeOwned + 'static>(
     reader: &mut Stream,
 ) -> Result<Option<T>> {
     match parse_response(reader).await?.err() {
-        Ok(Response {
-            header,
-            extras,
-            value,
-            ..
-        }) => {
-            let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
-            Ok(Some(parse::deserialize_bytes(&value).unwrap()))
-        }
+        Ok(Response { value, .. }) => Ok(Some(parse::deserialize_bytes(&value)?)),
         Err(MemcachedError::CommandError(CommandError::KeyNotFound)) => Ok(None),
         Err(e) => Err(e),
     }
@@ -166,11 +157,7 @@ pub(crate) async fn parse_gets_response<V: DeserializeOwned + 'static>(
         let key = String::from_utf8(key)?;
         let _ = result.insert(
             key,
-            (
-                parse::deserialize_bytes(&value).unwrap(),
-                flags,
-                Some(header.cas),
-            ),
+            (parse::deserialize_bytes(&value)?, flags, Some(header.cas)),
         );
     }
     Err(ServerError::BadResponse(Cow::Borrowed("Expected end of gets response")).into())
