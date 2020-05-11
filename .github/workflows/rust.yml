@@ -13,8 +13,8 @@ jobs:
       matrix:
         version:
           - stable
-#           - beta
-#           - nightly
+    #           - beta
+    #           - nightly
 
     steps:
       - uses: actions/checkout@v2
@@ -38,3 +38,5 @@ jobs:
         run: cargo test --verbose
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
+        with:
+          run-types: 'Doctests'
