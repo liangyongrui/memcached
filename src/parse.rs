@@ -46,10 +46,8 @@ where
     macro_rules! downcast {
             ($($ty:ty,)*) => {
                 $(if t_id == TypeId::of::<$ty>() {
-                    dbg!("######",&bytes);
                     let s: String = bincode::deserialize(&bytes)?;
                     let mut num: $ty = s.trim().parse()?;
-                    dbg!("@@@@", s, num);
                     let res: T = if let Some(c) = Any::downcast_mut::<T>(&mut num) {
                         // *c 泛型参数没有实现copy， 没有实现Default， 但是这里的num是实现的
                         std::mem::replace(c, bincode::deserialize(&bytes)?)

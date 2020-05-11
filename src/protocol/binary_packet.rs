@@ -139,7 +139,6 @@ pub(crate) async fn parse_get_response<T: DeserializeOwned + 'static>(
             value,
             ..
         }) => {
-            dbg!(&value);
             let flags = Cursor::new(extras).read_u32::<BigEndian>()?;
             Ok(Some(parse::deserialize_bytes(&value).unwrap()))
         }

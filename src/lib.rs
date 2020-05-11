@@ -102,9 +102,7 @@ mod tests {
             async fn foo() -> crate::Result<()> {
                 let client = crate::connect("memcache://127.0.0.1:12345").unwrap();
                 // client.set("increment_test", 100, 100).await?;
-                // dbg!("@@#");
                 // let t = client.increment("increment_test", 10).await?;
-                // dbg!("@@#");
                 // assert_eq!(120, client.increment("increment_test", 10).await?);
                 // let t: Option<u64> = client.get("increment_test").await?;
                 // assert_eq!(t, Some(120));
