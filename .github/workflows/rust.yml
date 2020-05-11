@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt install -y libevent-dev libssl-dev memcached
       - name: run memcached
-        run: /usr/bin/memcached -p 12345 -m 64m -vv -S
+        run: /usr/bin/memcached -p 12345 -m 64m -d
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.version }}
