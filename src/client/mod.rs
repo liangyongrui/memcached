@@ -17,8 +17,8 @@ pub struct Client {
 }
 
 impl Client {
-    /// 获取连接，默认连接池个数为1
-    ///
+    /// Create a memcached client instance and connect to memcached server.
+    /// The default connection pool has only one connection.    ///
     /// ## Example
     ///
     /// ```rust
@@ -29,7 +29,7 @@ impl Client {
     pub fn connect(url: &str) -> Result<Self> {
         Self::connects_with(vec![url.to_owned()], 1, default_hash_function)
     }
-    /// 创建一个client，可以指定多个url，连接池大小，key hash连接池的函数
+    /// Create a client, you can specify multiple url, connection pool size, key hash connection pool function.
     ///
     /// ## Example
     ///
@@ -60,7 +60,7 @@ impl Client {
         })
     }
 
-    /// 获取版本号
+    /// Get server version
     ///
     /// ## Example
     ///

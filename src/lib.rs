@@ -53,7 +53,7 @@ pub type Result<T> = std::result::Result<T, error::MemcachedError>;
 pub use client::{connectable::Connectable, Client};
 
 /// Create a memcached client instance and connect to memcached server.
-/// 默认连接池个数为1
+/// The default connection pool has only one connection.
 ///
 /// ## Example
 ///
@@ -64,7 +64,7 @@ pub fn connect(url: &str) -> Result<Client> {
     Client::connect(url)
 }
 
-/// 创建一个client，可以指定多个url，连接池大小，key hash连接池的函数
+/// Create a client, you can specify multiple url, connection pool size, key hash connection pool function.
 ///
 /// ## Example
 ///
