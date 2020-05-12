@@ -21,10 +21,14 @@
     <img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square"
       alt="docs.rs docs" />
   </a>
-  <a href="https://docs.rs/memcached">
   <!-- ci -->
+  <a href="https://docs.rs/memcached">
     <img src="https://github.com/liangyongrui/memcached/workflows/Rust/badge.svg"
       alt="ci" />
+  </a>
+  <!-- coverage -->
+  <a href="https://codecov.io/gh/liangyongrui/memcached">
+    <img src="https://codecov.io/gh/liangyongrui/memcached/branch/master/graph/badge.svg" />
   </a>
 </div>
 
@@ -61,8 +65,8 @@ If you are concerned about an unimplemented feature, please tell me and I will f
   - [ ] [TLS connection](https://crates.io/crates/memcachd)
   - [ ] UDP connection
   - [ ] UNIX Domain socket connection
-- [x] Encodings
-  - [x] Support [Serde](https://github.com/serde-rs/serde)
+- [x] Encodings support [Serde](https://github.com/serde-rs/serde)
+  - Of course including but not limited to `&[u8]` / `Vec<u8>`
 - [x] Memcached cluster support with custom key hash algorithm
 
 ## Basic usage

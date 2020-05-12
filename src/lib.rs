@@ -71,27 +71,30 @@ pub fn connect(url: &str) -> Result<Client> {
 /// ## Example
 ///
 /// ```rust
-/// let client = memcached::Client::connects_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
+/// let client = memcached::Client::connect_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
 /// ```
-pub fn connects_withconnects_with(
+pub fn connect_withconnect_with(
     urls: Vec<String>,
     pool_size: u64,
     hash_function: fn(&str) -> u64,
 ) -> Result<Client> {
-    Client::connects_with(urls, pool_size, hash_function)
+    Client::connect_with(urls, pool_size, hash_function)
 }
 
-#[allow(clippy::result_unwrap_used)]
+#[allow(clippy::result_unwrap_used, clippy::option_unwrap_used)]
 #[cfg(test)]
 mod tests {
     #[async_std::test]
     async fn it_works() -> crate::Result<()> {
-        let _client = crate::connect("memcache://127.0.0.1:12345")?;
-        // client.set("increment_test", 100, 100).await?;
-        // let t = client.increment("increment_test", 10).await?;
-        // assert_eq!(120, client.increment("increment_test", 10).await?);
-        // let t: Option<u64> = client.get("increment_test").await?;
-        // assert_eq!(t, Some(120));
+        let client = crate::connect("memcache://127.0.0.1:12345")?;
+        client
+            .set::<&[u8], _>("abcd", &[1, 2, 3, 4, 5], 100)
+            .await?;
+        let t: Option<Vec<u8>> = client.get("abcd").await?;
+        assert_eq!(t.unwrap(), vec![1, 2, 3, 4, 5]);
+        client.set("abc", "hello", 100).await?;
+        let t: Option<String> = client.get("abc").await?;
+        assert_eq!(t, Some("hello".to_owned()));
         Ok(())
     }
 }

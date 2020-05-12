@@ -30,6 +30,9 @@ async fn tcp_stream(url: &Url) -> Result<Stream> {
 }
 
 impl Connection {
+    pub(crate) fn get_url(&self) -> String {
+        self.url.to_string()
+    }
     async fn connect(url: &Url) -> Result<Self> {
         let stream = tcp_stream(url).await?;
         let protocol = BinaryProtocol { stream };

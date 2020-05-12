@@ -3,7 +3,7 @@ mod client_hash;
 pub(crate) mod connectable;
 
 use crate::connection::ConnectionManager;
-use crate::{error::ClientError, Result};
+use crate::{error::ClientError, Connectable, Result};
 use client_hash::default_hash_function;
 use mobc::Pool;
 use serde::{de::DeserializeOwned, Serialize};
@@ -19,7 +19,7 @@ pub struct Client {
 
 impl Client {
     /// Create a memcached client instance and connect to memcached server.
-    /// The default connection pool has only one connection.    ///
+    /// The default connection pool has only one connection.  
     /// ## Example
     ///
     /// ```rust
@@ -27,8 +27,8 @@ impl Client {
     /// let client = memcached::Client::connect("memcache://127.0.0.1:12345")?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub fn connect(url: &str) -> Result<Self> {
-        Self::connects_with(vec![url.to_owned()], 1, default_hash_function)
+    pub fn connect<T: Connectable>(urls: T) -> Result<Self> {
+        Self::connect_with(urls, 1, default_hash_function)
     }
     /// Create a client, you can specify multiple url, connection pool size, key hash connection pool function.
     ///
@@ -36,16 +36,16 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::Client::connects_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1)?;
+    /// let client = memcached::Client::connect_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1)?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub fn connects_with(
-        urls: Vec<String>,
+    pub fn connect_with<T: Connectable>(
+        urls: T,
         pool_size: u64,
         hash_function: fn(&str) -> u64,
     ) -> Result<Self> {
         let mut connections = vec![];
-        for url in urls {
+        for url in urls.get_urls() {
             let parsed = Url::parse(url.as_str())?;
             let pool = Pool::builder()
                 .max_idle(pool_size)
@@ -71,11 +71,11 @@ impl Client {
     /// let version = client.version().await?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn version(&self) -> Result<Vec<String>> {
-        let mut result = Vec::with_capacity(self.connections.len());
+    pub async fn version(&self) -> Result<HashMap<String, String>> {
+        let mut result: HashMap<String, String> = HashMap::new();
         for connection in &self.connections {
             let mut connection = connection.get().await?;
-            result.push(connection.version().await?);
+            let _ = result.insert(connection.get_url(), connection.version().await?);
         }
         Ok(result)
     }
@@ -91,9 +91,16 @@ impl Client {
     /// assert_eq!(t, None);
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn get<V: DeserializeOwned + 'static>(&self, key: &str) -> Result<Option<V>> {
-        check::check_key_len(key)?;
-        self.get_connection(key).get().await?.get(key).await
+    pub async fn get<V: DeserializeOwned + 'static, K: AsRef<str>>(
+        &self,
+        key: K,
+    ) -> Result<Option<V>> {
+        check::check_key_len(key.as_ref())?;
+        self.get_connection(key.as_ref())
+            .get()
+            .await?
+            .get(key.as_ref())
+            .await
     }
 
     /// Set a key with associate value into memcached server with expiration seconds.
@@ -108,17 +115,17 @@ impl Client {
     /// assert_eq!(t, Some("hello".to_owned()));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn set<V: Serialize + 'static>(
+    pub async fn set<V: Serialize + 'static, K: AsRef<str>>(
         &self,
-        key: &str,
+        key: K,
         value: V,
         expiration: u32,
     ) -> Result<()> {
-        check::check_key_len(key)?;
-        self.get_connection(key)
+        check::check_key_len(key.as_ref())?;
+        self.get_connection(key.as_ref())
             .get()
             .await?
-            .set(key, value, expiration)
+            .set(key.as_ref(), value, expiration)
             .await
     }
 
@@ -180,17 +187,17 @@ impl Client {
     /// assert_eq!(t, Some("hello".to_owned()));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn add<V: Serialize + 'static>(
+    pub async fn add<V: Serialize + 'static, K: AsRef<str>>(
         &self,
-        key: &str,
+        key: K,
         value: V,
         expiration: u32,
     ) -> Result<()> {
-        check::check_key_len(key)?;
-        self.get_connection(key)
+        check::check_key_len(key.as_ref())?;
+        self.get_connection(key.as_ref())
             .get()
             .await?
-            .add(key, value, expiration)
+            .add(key.as_ref(), value, expiration)
             .await
     }
 
@@ -210,12 +217,13 @@ impl Client {
     /// assert_eq!(t, Some("hello233".to_owned()));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn replace<V: Serialize + 'static>(
+    pub async fn replace<V: Serialize + 'static, K: AsRef<str>>(
         &self,
-        key: &str,
+        key: K,
         value: V,
         expiration: u32,
     ) -> Result<()> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -237,7 +245,12 @@ impl Client {
     /// assert_eq!(t, Some("hello, 233".to_owned()));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn append<V: Serialize + 'static>(&self, key: &str, value: V) -> Result<()> {
+    pub async fn append<V: Serialize + 'static, K: AsRef<str>>(
+        &self,
+        key: K,
+        value: V,
+    ) -> Result<()> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -258,7 +271,12 @@ impl Client {
     /// assert_eq!(t, Some("233! hello".to_owned()));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn prepend<V: Serialize + 'static>(&self, key: &str, value: V) -> Result<()> {
+    pub async fn prepend<V: Serialize + 'static, K: AsRef<str>>(
+        &self,
+        key: K,
+        value: V,
+    ) -> Result<()> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -282,7 +300,8 @@ impl Client {
     /// assert_eq!(t, None);
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn delete(&self, key: &str) -> Result<bool> {
+    pub async fn delete<K: AsRef<str>>(&self, key: K) -> Result<bool> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key).get().await?.delete(key).await
     }
@@ -301,7 +320,8 @@ impl Client {
     /// assert_eq!(t, Some(120));
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn increment(&self, key: &str, amount: u64) -> Result<u64> {
+    pub async fn increment<K: AsRef<str>>(&self, key: K, amount: u64) -> Result<u64> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -324,7 +344,8 @@ impl Client {
     /// assert_eq!(t.unwrap(), 80);
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn decrement(&self, key: &str, amount: u64) -> Result<u64> {
+    pub async fn decrement<K: AsRef<str>>(&self, key: K, amount: u64) -> Result<u64> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -350,7 +371,8 @@ impl Client {
     /// assert_eq!(t, None);
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn touch(&self, key: &str, expiration: u32) -> Result<bool> {
+    pub async fn touch<K: AsRef<str>>(&self, key: K, expiration: u32) -> Result<bool> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
@@ -360,7 +382,6 @@ impl Client {
     }
 
     /// Get all servers' statistics.
-    /// 暂时不可用
     ///
     /// ## Example
     ///
@@ -390,23 +411,22 @@ impl Client {
     /// client.set("gets_test1", "100", 100).await?;
     /// client.set("gets_test2", "200", 100).await?;
     /// let t = client
-    ///    .gets::<String>(&["gets_test1", "gets_test2"])
-    ///    .await
-    ///    .unwrap();;
+    ///    .gets::<String, _>(&["gets_test1", "gets_test2"])
+    ///    .await?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn gets<V: DeserializeOwned + 'static>(
+    pub async fn gets<V: DeserializeOwned + 'static, K: AsRef<str>>(
         &self,
-        keys: &[&str],
+        keys: &[K],
     ) -> Result<HashMap<String, (V, u32, Option<u64>)>> {
-        for key in keys {
+        for key in keys.iter().map(AsRef::as_ref) {
             check::check_key_len(key)?;
         }
         let mut con_keys: HashMap<usize, Vec<&str>> = HashMap::new();
         let mut result = HashMap::new();
         let connections_count = self.connections.len() as u64;
 
-        for key in keys {
+        for key in keys.iter().map(AsRef::as_ref) {
             let connection_index = ((self.hash_function)(key) % connections_count) as usize;
             let array = con_keys.entry(connection_index).or_insert_with(Vec::new);
             array.push(key);
@@ -429,7 +449,7 @@ impl Client {
     /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
     /// client.set("cas_test1", "100", 100).await?;
     /// let t = client
-    ///     .gets::<String>(&["cas_test1"])
+    ///     .gets::<String, _>(&["cas_test1"])
     ///     .await
     ///     ?;
     /// let k = t.get("cas_test1").unwrap();
@@ -438,23 +458,24 @@ impl Client {
     ///     .cas("cas_test1", "200", 100, k.2.unwrap() - 1)
     ///     .await
     ///     ?;
-    /// let t = client.get::<String>("cas_test1").await?;
+    /// let t = client.get::<String, _>("cas_test1").await?;
     /// assert_eq!(t.unwrap(), "100".to_owned());
     /// let t = client
     ///     .cas("cas_test1", "300", 100, k.2.unwrap())
     ///     .await
     ///     ?;
-    /// let t = client.get::<String>("cas_test1").await?;
+    /// let t = client.get::<String, _>("cas_test1").await?;
     /// assert_eq!(t.unwrap(), "300".to_owned());;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
-    pub async fn cas<V: Serialize + 'static>(
+    pub async fn cas<V: Serialize + 'static, K: AsRef<str>>(
         &self,
-        key: &str,
+        key: K,
         value: V,
         expiration: u32,
         cas_id: u64,
     ) -> Result<bool> {
+        let key = key.as_ref();
         check::check_key_len(key)?;
         self.get_connection(key)
             .get()
