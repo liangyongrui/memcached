@@ -85,18 +85,13 @@ pub fn connects_withconnects_with(
 #[cfg(test)]
 mod tests {
     #[async_std::test]
-    async fn it_works() {
-        async_std::task::block_on(async {
-            async fn foo() -> crate::Result<()> {
-                let _client = crate::connect("memcache://127.0.0.1:12345")?;
-                // client.set("increment_test", 100, 100).await?;
-                // let t = client.increment("increment_test", 10).await?;
-                // assert_eq!(120, client.increment("increment_test", 10).await?);
-                // let t: Option<u64> = client.get("increment_test").await?;
-                // assert_eq!(t, Some(120));
-                Ok(())
-            }
-            dbg!(foo().await.unwrap());
-        });
+    async fn it_works() -> crate::Result<()> {
+        let _client = crate::connect("memcache://127.0.0.1:12345")?;
+        // client.set("increment_test", 100, 100).await?;
+        // let t = client.increment("increment_test", 10).await?;
+        // assert_eq!(120, client.increment("increment_test", 10).await?);
+        // let t: Option<u64> = client.get("increment_test").await?;
+        // assert_eq!(t, Some(120));
+        Ok(())
     }
 }

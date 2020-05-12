@@ -67,7 +67,7 @@ If you are concerned about an unimplemented feature, please tell me and I will f
 
 ## Basic usage
 
-Your Cargo.toml could look like this:
+This example uses async-std and enables some optional features, so your Cargo.toml could look like this:
 
 ```toml
 [dependencies]
@@ -78,10 +78,14 @@ memcached = "*"
 And then the code:
 
 ```rust
-let client = memcached::connect("memcache://127.0.0.1:12345")?;
-client.set("abc", "hello", 100).await?;
-let t: Option<String> = client.get("abc").await?;
-assert_eq!(t, Some("hello".to_owned()));
+#[async_std::test]
+async fn it_works() -> memcached::Result<()> {
+    let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    client.set("abc", "hello", 100).await?;
+    let t: Option<String> = client.get("abc").await?;
+    assert_eq!(t, Some("hello".to_owned()));
+    Ok(())
+}
 ```
 
 For more usage, see [doc](https://docs.rs/memcached), each method of client has example.
