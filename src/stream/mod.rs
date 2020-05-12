@@ -1,6 +1,8 @@
 use crate::Result;
-use async_std::io::prelude::{ReadExt, WriteExt};
-use async_std::net::TcpStream;
+use async_std::{
+    io::prelude::{ReadExt, WriteExt},
+    net::TcpStream,
+};
 use byteorder::{BigEndian, ByteOrder};
 
 pub(crate) enum Stream {

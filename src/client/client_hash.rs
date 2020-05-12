@@ -1,12 +1,10 @@
 use std::{
     collections::hash_map::DefaultHasher,
-    convert::TryInto,
     hash::{Hash, Hasher},
 };
 
-#[allow(clippy::result_unwrap_used)]
-pub(crate) fn default_hash_function(key: &str) -> usize {
+pub(crate) fn default_hash_function(key: &str) -> u64 {
     let mut hasher = DefaultHasher::new();
     key.hash(&mut hasher);
-    hasher.finish().try_into().unwrap()
+    hasher.finish()
 }

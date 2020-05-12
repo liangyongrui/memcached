@@ -10,10 +10,11 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use url::Url;
 
+/// Client for operating connection pool
 #[derive(Clone)]
 pub struct Client {
     connections: Vec<Pool<ConnectionManager>>,
-    hash_function: fn(&str) -> usize,
+    hash_function: fn(&str) -> u64,
 }
 
 impl Client {
@@ -41,7 +42,7 @@ impl Client {
     pub fn connects_with(
         urls: Vec<String>,
         pool_size: u64,
-        hash_function: fn(&str) -> usize,
+        hash_function: fn(&str) -> u64,
     ) -> Result<Self> {
         let mut connections = vec![];
         for url in urls {
@@ -403,10 +404,10 @@ impl Client {
         }
         let mut con_keys: HashMap<usize, Vec<&str>> = HashMap::new();
         let mut result = HashMap::new();
-        let connections_count = self.connections.len();
+        let connections_count = self.connections.len() as u64;
 
         for key in keys {
-            let connection_index = (self.hash_function)(key) % connections_count;
+            let connection_index = ((self.hash_function)(key) % connections_count) as usize;
             let array = con_keys.entry(connection_index).or_insert_with(Vec::new);
             array.push(key);
         }
@@ -466,8 +467,7 @@ impl Client {
     /// 没有风险
     #[allow(clippy::indexing_slicing)]
     fn get_connection(&self, key: &str) -> &Pool<ConnectionManager> {
-        let connections_count = self.connections.len();
-        let hash = (self.hash_function)(key) % connections_count;
+        let hash = ((self.hash_function)(key) % self.connections.len() as u64) as usize;
         &self.connections[hash]
     }
 }

@@ -1,4 +1,6 @@
+/// Can provide multiple URLs
 pub trait Connectable {
+    /// provide urls
     fn get_urls(self) -> Vec<String>;
 }
 

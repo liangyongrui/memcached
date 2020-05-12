@@ -1,18 +1,13 @@
-use crate::protocol::BinaryProtocol;
-use crate::stream::Stream;
-use crate::{error::MemcachedError, Result};
+use crate::{error::MemcachedError, protocol::BinaryProtocol, stream::Stream, Result};
 use async_std::net::TcpStream;
 use mobc::{async_trait, Manager};
-use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::ops::{Deref, DerefMut};
 use url::Url;
 
 /// A connection to the memcached server
 pub(crate) struct Connection {
     pub(crate) protocol: BinaryProtocol,
-    pub(crate) url: Arc<String>,
+    pub(crate) url: String,
 }
 
 impl DerefMut for Connection {
@@ -39,7 +34,7 @@ impl Connection {
         let stream = tcp_stream(url).await?;
         let protocol = BinaryProtocol { stream };
         Ok(Connection {
-            url: Arc::new(url.to_string()),
+            url: url.to_string(),
             protocol,
         })
     }

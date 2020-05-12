@@ -1,8 +1,6 @@
 //! [BinaryProtocol](https://github.com/memcached/memcached/wiki/BinaryProtocolRevamped)
 
-pub(crate) const OK_STATUS: u16 = 0x0;
-
-pub(crate) enum Opcode {
+pub(super) enum Opcode {
     Get = 0x00,
     Set = 0x01,
     Add = 0x02,
@@ -21,7 +19,7 @@ pub(crate) enum Opcode {
     StartAuth = 0x21,
 }
 
-pub(crate) enum Magic {
+pub(super) enum Magic {
     Request = 0x80,
     Response = 0x81,
 }

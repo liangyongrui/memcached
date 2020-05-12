@@ -6,7 +6,10 @@
 
 use crate::Result;
 use byteorder::{ByteOrder, LittleEndian};
-use std::any::{Any, TypeId};
+use std::{
+    any::{Any, TypeId},
+    ptr,
+};
 
 /// 对于字符串，跳过前8个字节
 pub(crate) fn serialize_bytes<T: 'static>(value: &T) -> Result<Vec<u8>>
@@ -47,19 +50,13 @@ where
             ($($ty:ty,)*) => {
                 $(if t_id == TypeId::of::<$ty>() {
                     let s: String = bincode::deserialize(&bytes)?;
-                    let mut num: $ty = s.trim().parse()?;
-                    let res: T = if let Some(c) = Any::downcast_mut::<T>(&mut num) {
-                        // *c 泛型参数没有实现copy， 没有实现Default， 但是这里的num是实现的
-                        std::mem::replace(c, bincode::deserialize(&bytes)?)
-                    } else {
-                        // unreachable
-                        bincode::deserialize(&bytes)?
-                    };
-                    return Ok(res);
+                    let num: $ty = s.trim().parse()?;
+                    let p = &num as *const $ty as *const T;
+                    return Ok(unsafe { ptr::read(p) });
                 })*
             };
         }
-    downcast![u8, u16, u32, u64, u128, i8, i16, i32, i64, i128,];
+    downcast![u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, f32, f64,];
     Ok(bincode::deserialize(&bytes)?)
 }
 
@@ -74,7 +71,7 @@ fn parse_as_str<T: 'static>(value: &T) -> Option<String> {
             })*
         };
     }
-    downcast![String, &str, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool,];
+    downcast![String, &str, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool, f32, f64,];
     None
 }
 fn can_as_str<T: 'static>() -> bool {
@@ -86,6 +83,6 @@ fn can_as_str<T: 'static>() -> bool {
             })*
         };
     }
-    downcast![String, &str, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool,];
+    downcast![String, &str, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool, f32, f64,];
     false
 }

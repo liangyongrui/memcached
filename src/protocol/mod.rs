@@ -1,10 +1,13 @@
 pub(crate) mod binary_packet;
 mod code;
+mod parse;
+
 use self::binary_packet::PacketHeader;
-use crate::{parse, stream::Stream, Result};
+use crate::{stream::Stream, Result};
 use code::{Magic, Opcode};
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
+
 pub(crate) struct BinaryProtocol {
     pub(crate) stream: Stream,
 }

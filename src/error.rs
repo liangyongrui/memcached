@@ -80,24 +80,6 @@ pub enum CommandError {
     InvalidCommand,
 }
 
-impl MemcachedError {
-    // pub(crate) fn try_from(s: &str) -> Result<&str, MemcachedError> {
-    //     if s == "ERROR\r\n" {
-    //         Err(CommandError::InvalidCommand.into())
-    //     } else if s.starts_with("CLIENT_ERROR") {
-    //         Err(ClientError::from(String::from(s)).into())
-    //     } else if s.starts_with("SERVER_ERROR") {
-    //         Err(ServerError::from(String::from(s)).into())
-    //     } else if s == "NOT_FOUND\r\n" {
-    //         Err(CommandError::KeyNotFound.into())
-    //     } else if s == "EXISTS\r\n" {
-    //         Err(CommandError::KeyExists.into())
-    //     } else {
-    //         Ok(s)
-    //     }
-    // }
-}
-
 impl From<String> for ClientError {
     fn from(s: String) -> Self {
         ClientError::Error(Cow::Owned(s))
@@ -152,7 +134,7 @@ impl From<ServerError> for MemcachedError {
         MemcachedError::ServerError(err)
     }
 }
-
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub enum ParseError {
     Bool(str::ParseBoolError),
@@ -252,6 +234,7 @@ pub enum MemcachedError {
     OpensslError(openssl::ssl::HandshakeError<std::net::TcpStream>),
     /// Parse errors
     ParseError(ParseError),
+    /// pool error
     PoolError(&'static str),
 }
 

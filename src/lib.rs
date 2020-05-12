@@ -1,7 +1,7 @@
 //!
 
 #![deny(
-    // missing_docs,
+    missing_docs,
     bare_trait_objects,
     missing_copy_implementations,
     single_use_lifetimes,
@@ -12,10 +12,10 @@
     unused_qualifications,
     unused_results,
     variant_size_differences,
-    unsafe_code,
+    // unsafe_code,
     trivial_casts,
     // missing_debug_implementations,
-//     // 把所有warnings级别的改为deny
+    // 把所有warnings级别的改为deny
     warnings,
     clippy::all,
     clippy::correctness,
@@ -40,15 +40,17 @@
     clippy::doc_markdown,
     clippy::cast_possible_truncation, //
     clippy::integer_arithmetic, //
+    trivial_casts,
 )]
 
 mod client;
 mod connection;
+/// memcached error
 pub mod error;
-mod parse;
 mod protocol;
 mod stream;
 
+/// memcached result
 pub type Result<T> = std::result::Result<T, error::MemcachedError>;
 pub use client::{connectable::Connectable, Client};
 
@@ -74,7 +76,7 @@ pub fn connect(url: &str) -> Result<Client> {
 pub fn connects_withconnects_with(
     urls: Vec<String>,
     pool_size: u64,
-    hash_function: fn(&str) -> usize,
+    hash_function: fn(&str) -> u64,
 ) -> Result<Client> {
     Client::connects_with(urls, pool_size, hash_function)
 }
@@ -86,12 +88,12 @@ mod tests {
     async fn it_works() {
         async_std::task::block_on(async {
             async fn foo() -> crate::Result<()> {
-                let _client = crate::connect("memcache://127.0.0.1:12345")?; //.unwrap();
-                                                                             // client.set("increment_test", 100, 100).await?;
-                                                                             // let t = client.increment("increment_test", 10).await?;
-                                                                             // assert_eq!(120, client.increment("increment_test", 10).await?);
-                                                                             // let t: Option<u64> = client.get("increment_test").await?;
-                                                                             // assert_eq!(t, Some(120));
+                let _client = crate::connect("memcache://127.0.0.1:12345")?;
+                // client.set("increment_test", 100, 100).await?;
+                // let t = client.increment("increment_test", 10).await?;
+                // assert_eq!(120, client.increment("increment_test", 10).await?);
+                // let t: Option<u64> = client.get("increment_test").await?;
+                // assert_eq!(t, Some(120));
                 Ok(())
             }
             dbg!(foo().await.unwrap());
