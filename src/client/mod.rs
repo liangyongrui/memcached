@@ -24,7 +24,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::Client::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::Client::connect("memcache://127.0.0.1:11211")?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub fn connect<T: Connectable>(urls: T) -> Result<Self> {
@@ -36,7 +36,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::Client::connect_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1)?;
+    /// let client = memcached::Client::connect_with(vec!["memcache://127.0.0.1:11211".to_owned()], 2, |s|1)?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
     pub fn connect_with<T: Connectable>(
@@ -67,7 +67,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// let version = client.version().await?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
@@ -86,7 +86,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// let t: Option<String> = client.get("get_none").await?;
     /// assert_eq!(t, None);
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
@@ -109,7 +109,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("abc", "hello", 100).await?;
     /// let t: Option<String> = client.get("abc").await?;
     /// assert_eq!(t, Some("hello".to_owned()));
@@ -135,7 +135,7 @@ impl Client {
     ///
     /// ```no_run
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("flush_test", "hello", 100).await?;
     /// client.flush().await?;
     /// let t: Option<String> = client.get("flush_test").await?;
@@ -155,7 +155,7 @@ impl Client {
     ///
     /// ```no_run
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("flush_with_delay_test", "hello", 100).await?;
     /// client.flush_with_delay(2).await?;
     /// let t: Option<String> = client.get("flush_with_delay_test").await?;
@@ -178,7 +178,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.delete("add_test").await?;
     /// client.add("add_test", "hello", 100).await?;
     /// // repeat add KeyExists
@@ -207,7 +207,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.delete("replace_test").await?;
     /// // KeyNotFound
     /// client.replace("replace_test", "hello", 100).await.unwrap_err();
@@ -238,7 +238,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("append_test", "hello", 100).await?;
     /// client.append("append_test", ", 233").await?;
     /// let t: Option<String> = client.get("append_test").await?;
@@ -264,7 +264,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("prepend_test", "hello", 100).await?;
     /// client.prepend("prepend_test", "233! ").await?;
     /// let t: Option<String> = client.get("prepend_test").await?;
@@ -291,7 +291,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.add("delete_test", "hello", 100).await?;
     /// let t: Option<String> = client.get("delete_test").await?;
     /// assert_eq!(t, Some("hello".to_owned()));
@@ -312,7 +312,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("increment_test", 100, 100).await?;
     /// client.increment("increment_test", 10).await?;
     /// assert_eq!(120, client.increment("increment_test", 10).await.unwrap());
@@ -336,7 +336,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("decrement_test", 100, 100).await?;
     /// let t = client.decrement("decrement_test", 10).await?;
     /// assert_eq!(80, client.decrement("decrement_test", 10).await.unwrap());
@@ -360,7 +360,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("touch_test", "100", 100).await?;
     /// async_std::task::sleep(core::time::Duration::from_secs(1)).await;
     /// let t: Option<String> = client.get("touch_test").await?;
@@ -387,7 +387,7 @@ impl Client {
     ///
     /// ```
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// let t = client.stats().await?;
     /// # Ok(()) } dbg!(foo().await.unwrap()); });
     /// ```
@@ -407,7 +407,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("gets_test1", "100", 100).await?;
     /// client.set("gets_test2", "200", 100).await?;
     /// let t = client
@@ -446,7 +446,7 @@ impl Client {
     ///
     /// ```rust
     /// # async_std::task::block_on(async { async fn foo() -> memcached::Result<()> {   
-    /// let client = memcached::connect("memcache://127.0.0.1:12345")?;
+    /// let client = memcached::connect("memcache://127.0.0.1:11211")?;
     /// client.set("cas_test1", "100", 100).await?;
     /// let t = client
     ///     .gets::<String, _>(&["cas_test1"])

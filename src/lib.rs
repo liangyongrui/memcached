@@ -59,7 +59,7 @@ pub use client::{connectable::Connectable, Client};
 /// ## Example
 ///
 /// ```rust
-/// let client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
+/// let client = memcached::connect("memcache://127.0.0.1:11211").unwrap();
 /// ```
 pub fn connect(url: &str) -> Result<Client> {
     Client::connect(url)
@@ -70,7 +70,7 @@ pub fn connect(url: &str) -> Result<Client> {
 /// ## Example
 ///
 /// ```rust
-/// let client = memcached::Client::connect_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
+/// let client = memcached::Client::connect_with(vec!["memcache://127.0.0.1:11211".to_owned()], 2, |s|1).unwrap();
 /// ```
 pub fn connect_withconnect_with(
     urls: Vec<String>,
