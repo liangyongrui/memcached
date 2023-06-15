@@ -19,7 +19,7 @@
     warnings,
     clippy::all,
     clippy::correctness,
-    clippy::restriction,
+    // clippy::restriction,
     clippy::style,
     clippy::complexity,
     clippy::perf,
@@ -35,7 +35,6 @@
     clippy::implicit_return,
     clippy::as_conversions,
     clippy::dbg_macro,
-    clippy::pub_enum_variant_names,
     clippy::multiple_crate_versions,
     clippy::doc_markdown,
     clippy::cast_possible_truncation, //
@@ -86,7 +85,7 @@ pub fn connect_withconnect_with(
 mod tests {
     #[async_std::test]
     async fn it_works() -> crate::Result<()> {
-        let client = crate::connect("memcache://127.0.0.1:12345")?;
+        let client = crate::connect("memcache://127.0.0.1:11211")?;
         client
             .set::<&[u8], _>("abcd", &[1, 2, 3, 4, 5], 100)
             .await?;

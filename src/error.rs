@@ -22,7 +22,7 @@ impl fmt::Display for ClientError {
         match self {
             ClientError::KeyTooLong => write!(f, "The provided key was too long."),
             ClientError::ConnectionsIsEmpty => write!(f, "The Connections is empty."),
-            ClientError::Error(s) => write!(f, "{}", s),
+            ClientError::Error(s) => write!(f, "{s}"),
         }
     }
 }
@@ -50,11 +50,10 @@ impl fmt::Display for ServerError {
         match self {
             ServerError::BadMagic(e) => write!(
                 f,
-                "Expected 0x81 as magic in response header, but found: {:x}",
-                e
+                "Expected 0x81 as magic in response header, but found: {e:x}"
             ),
-            ServerError::BadResponse(s) => write!(f, "Unexpected: {} in response", s),
-            ServerError::Error(s) => write!(f, "{}", s),
+            ServerError::BadResponse(s) => write!(f, "Unexpected: {s} in response"),
+            ServerError::Error(s) => write!(f, "{s}"),
         }
     }
 }
@@ -103,7 +102,7 @@ impl fmt::Display for CommandError {
             CommandError::IncrOrDecrOnNonNumericValue => {
                 write!(f, "Incr/Decr on non-numeric value.")
             }
-            CommandError::Unknown(code) => write!(f, "Unknown error occurred with code: {}.", code),
+            CommandError::Unknown(code) => write!(f, "Unknown error occurred with code: {code}."),
             CommandError::InvalidCommand => write!(f, "Invalid command sent to the server."),
         }
     }
