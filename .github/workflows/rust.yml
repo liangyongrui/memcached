@@ -9,36 +9,70 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        version:
-          - stable
-    #           - beta
-    #           - nightly
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Install dependencies
+      - name: Check out source code
+        uses: actions/checkout@v3
+
+      - name: Install Ubuntu dependencies
         run: sudo apt install -y libevent-dev libssl-dev memcached
-      - name: run memcached
+
+      - name: Run memcached
         run: /usr/bin/memcached -p 12345 -m 64m -d
-      - uses: actions-rs/toolchain@v1
+
+      - name: Set up caching
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install the stable Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.version }}
+          toolchain: stable
           override: true
-      - name: clean
-        run: cargo clean
-      - name: fmt
+
+      - name: Check source code formatting
         run: rustup component add rustfmt && cargo fmt -- --check
-      - name: clippy
+
+      - name: Run static analysis (clippy)
         run: rustup component add clippy && cargo clippy
+
       - name: Build
-        run: cargo build --verbose
+        run: cargo build
+
       - name: Run tests
-        run: cargo test --verbose
-      - name: Generate code coverage
-        run: cargo install cargo-tarpaulin && cargo tarpaulin --run-types Doctests Tests --verbose --all-features --workspace --timeout 120 --out Xml
-      - name: Upload to codecov.io
-        uses: codecov/codecov-action@v1
+        run: cargo test
+
+  coverage:
+    needs:
+      build
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up the nightly Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          fail_ci_if_error: true
+          toolchain: nightly
+          override: true
+
+      - name: Install memcached
+        run: sudo apt install -y memcached
+
+      - name: Set up caching
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check out source code
+        uses: actions/checkout@v3
+
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Run memcached
+        run: /usr/bin/memcached -p 12345 -m 64m -d
+
+      - name: Generate code coverage
+        run: cargo tarpaulin --run-types Tests --all-features --workspace --timeout 120 --out Xml
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

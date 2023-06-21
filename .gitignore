@@ -1,2 +1,4 @@
+/cobertura.xml
+/tarpaulin_*.json
 /target
 Cargo.lock
