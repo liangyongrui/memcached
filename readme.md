@@ -23,7 +23,7 @@
   </a>
   <!-- ci -->
   <a href="https://docs.rs/memcached">
-    <img src="https://github.com/liangyongrui/memcached/workflows/Rust/badge.svg"
+    <img src="https://github.com/umonkey/memcached/workflows/Rust/badge.svg"
       alt="ci" />
   </a>
   <!-- coverage -->

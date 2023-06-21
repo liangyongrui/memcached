@@ -128,7 +128,7 @@ pub(super) async fn parse_cas_response(stream: &mut Stream) -> Result<bool> {
 
 pub(super) async fn parse_version_response(stream: &mut Stream) -> Result<String> {
     let Response { value, .. } = parse_response(stream).await?.err()?;
-    Ok(parse::deserialize_bytes(&value)?)
+    parse::deserialize_bytes(&value)
 }
 
 pub(super) async fn parse_get_response<T: DeserializeOwned + 'static>(

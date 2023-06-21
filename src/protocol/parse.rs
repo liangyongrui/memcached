@@ -51,13 +51,13 @@ where
                 $(if t_id == TypeId::of::<$ty>() {
                     let s: String = bincode::deserialize(&bytes)?;
                     let num: $ty = s.trim().parse()?;
-                    let p = &num as *const $ty as *const T;
+                    let p = (&num as *const $ty).cast::<T>();
                     return Ok(unsafe { ptr::read(p) });
                 })*
             };
         }
     downcast![u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, f32, f64,];
-    Ok(bincode::deserialize(&bytes)?)
+    Ok(bincode::deserialize(bytes)?)
 }
 
 /// 判断 value 是否可以视为str
@@ -66,7 +66,7 @@ where
 fn parse_as_str<T: 'static>(value: &T) -> Option<String> {
     macro_rules! downcast {
         ($($ty:ty,)*) => {
-            $(if let Some(t) = Any::downcast_ref::<$ty>(value) {
+            $(if let Some(t) = <dyn Any>::downcast_ref::<$ty>(value) {
                 return Some(t.to_string());
             })*
         };

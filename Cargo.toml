@@ -1,11 +1,11 @@
 [package]
 name = "memcached"
-version = "0.4.4"
+version = "0.4.5-beta"
 authors = ["liangyongrui <leungyongrui@gmail.com>"]
 edition = "2018"
 description = "async memcached rust client"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/liangyongrui/memcached"
+repository = "https://github.com/umonkey/memcached"
 readme = "readme.md"
 keywords = ['memcached']
 categories = ['memcached']

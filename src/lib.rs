@@ -19,7 +19,7 @@
     warnings,
     clippy::all,
     clippy::correctness,
-    clippy::restriction,
+    // clippy::restriction,
     clippy::style,
     clippy::complexity,
     clippy::perf,
@@ -35,7 +35,6 @@
     clippy::implicit_return,
     clippy::as_conversions,
     clippy::dbg_macro,
-    clippy::pub_enum_variant_names,
     clippy::multiple_crate_versions,
     clippy::doc_markdown,
     clippy::cast_possible_truncation, //
