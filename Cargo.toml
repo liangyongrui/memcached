@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/umonkey/memcached"
 readme = "readme.md"
 keywords = ['memcached']
-categories = ['memcached']
+categories = ['caching']
 
 [dependencies]
 byteorder = "1"
