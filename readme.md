@@ -27,8 +27,8 @@
       alt="ci" />
   </a>
   <!-- coverage -->
-  <a href="https://codecov.io/gh/liangyongrui/memcached">
-    <img src="https://codecov.io/gh/liangyongrui/memcached/branch/master/graph/badge.svg" />
+  <a href="https://codecov.io/gh/umonkey/memcached">
+    <img src="https://codecov.io/gh/umonkey/memcached/branch/master/graph/badge.svg?token=2JGE7DYMKR" />
   </a>
 </div>
 
