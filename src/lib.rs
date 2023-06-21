@@ -72,7 +72,7 @@ pub fn connect(url: &str) -> Result<Client> {
 /// ```rust
 /// let client = memcached::Client::connect_with(vec!["memcache://127.0.0.1:12345".to_owned()], 2, |s|1).unwrap();
 /// ```
-pub fn connect_withconnect_with(
+pub fn connect_with(
     urls: Vec<String>,
     pool_size: u64,
     hash_function: fn(&str) -> u64,
