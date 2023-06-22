@@ -8,6 +8,7 @@ use client_hash::default_hash_function;
 use mobc::Pool;
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
+use std::time::Duration;
 use url::Url;
 
 /// Client for operating connection pool
@@ -48,7 +49,10 @@ impl Client {
         for url in urls.get_urls() {
             let parsed = Url::parse(url.as_str())?;
             let pool = Pool::builder()
+                .max_open(pool_size)
                 .max_idle(pool_size)
+                .test_on_check_out(false)
+                .health_check_interval(Some(Duration::from_secs(30)))
                 .build(ConnectionManager { url: parsed });
             connections.push(pool);
         }
