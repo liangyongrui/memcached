@@ -14,10 +14,12 @@ categories = ['caching']
 byteorder = "1"
 url = "2"
 async-std = { version = "1", features = ["attributes"] }
-mobc = { version = "0.5", features = ["async-std"] }
+log = "^0.4"
+mobc = { version = "0.7", features = ["async-std"] }
 bincode = "1"
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 rand = "0.7"
 lazy_static = "1"
+env_logger = "0.8"

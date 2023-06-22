@@ -5,7 +5,7 @@ use async_std::task;
 use memcached::Client;
 
 lazy_static! {
-    static ref CLIENT: Client = memcached::connect("memcache://127.0.0.1:11211").unwrap();
+    static ref CLIENT: Client = memcached::connect("memcache://127.0.0.1:12345").unwrap();
 }
 
 #[async_std::test]

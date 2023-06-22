@@ -98,9 +98,7 @@ For more usage, see [doc](https://docs.rs/memcached), each method of client has 
 
 ### Should I use this in production?
 
-Better not.
-
-This project needs a lot of details to complete. But if you want, you can try it.
+Not in a high load environment.  It is very slow.  While the synchronous analogue performs a get operation in about 0,7 ms, this one takes about 43 ms on the same system.  Definitely something with the async code, needs further investigation.
 
 ## License
 
