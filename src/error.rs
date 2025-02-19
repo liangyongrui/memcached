@@ -140,7 +140,7 @@ pub enum ParseError {
     Int(num::ParseIntError),
     Float(num::ParseFloatError),
     String(string::FromUtf8Error),
-    Str(std::str::Utf8Error),
+    Str(str::Utf8Error),
     Url(url::ParseError),
     Bincode(bincode::Error),
 }
@@ -185,8 +185,8 @@ impl From<string::FromUtf8Error> for MemcachedError {
     }
 }
 
-impl From<std::str::Utf8Error> for MemcachedError {
-    fn from(err: std::str::Utf8Error) -> MemcachedError {
+impl From<str::Utf8Error> for MemcachedError {
+    fn from(err: str::Utf8Error) -> MemcachedError {
         ParseError::Str(err).into()
     }
 }

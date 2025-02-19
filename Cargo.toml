@@ -10,6 +10,9 @@ readme = "readme.md"
 keywords = ['memcached']
 categories = ['caching']
 
+[features]
+tls = []
+
 [dependencies]
 byteorder = "1"
 url = "2"

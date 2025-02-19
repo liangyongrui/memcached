@@ -4,3 +4,6 @@ test:
 
 benchmark:
 	RUST_LOG=debug cargo test --test benchmark -- --nocapture
+
+lint:
+	cargo clippy

@@ -1,4 +1,4 @@
-//!
+//! An async memcache client.
 
 #![deny(
     missing_docs,
@@ -38,7 +38,7 @@
     clippy::multiple_crate_versions,
     clippy::doc_markdown,
     clippy::cast_possible_truncation, //
-    clippy::integer_arithmetic, //
+    clippy::arithmetic_side_effects,
     trivial_casts,
 )]
 

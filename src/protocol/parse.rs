@@ -12,9 +12,9 @@ use std::{
 };
 
 /// 对于字符串，跳过前8个字节
-pub(crate) fn serialize_bytes<T: 'static>(value: &T) -> Result<Vec<u8>>
+pub(crate) fn serialize_bytes<T>(value: &T) -> Result<Vec<u8>>
 where
-    T: serde::Serialize,
+    T: serde::Serialize + 'static,
 {
     Ok(match parse_as_str(value) {
         Some(s) => bincode::serialize(&s)?.into_iter().skip(8).collect(),
@@ -51,7 +51,7 @@ where
                 $(if t_id == TypeId::of::<$ty>() {
                     let s: String = bincode::deserialize(&bytes)?;
                     let num: $ty = s.trim().parse()?;
-                    let p = (&num as *const $ty).cast::<T>();
+                    let p = std::ptr::from_ref::<$ty>(&num).cast::<T>();
                     return Ok(unsafe { ptr::read(p) });
                 })*
             };

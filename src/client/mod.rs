@@ -432,7 +432,7 @@ impl Client {
 
         for key in keys.iter().map(AsRef::as_ref) {
             let connection_index = ((self.hash_function)(key) % connections_count) as usize;
-            let array = con_keys.entry(connection_index).or_insert_with(Vec::new);
+            let array = con_keys.entry(connection_index).or_default();
             array.push(key);
         }
         for (&connection_index, keys) in &con_keys {

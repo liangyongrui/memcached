@@ -1,8 +1,6 @@
-/**
- * Test speed of main operations.
- * Run: cargo test --test benchmark -- --nocapture
- */
-use log::debug;
+//! Test speed of main operations.
+//! Run: cargo test --test benchmark -- --nocapture
+
 use memcached::Client;
 use std::time::Instant;
 
@@ -10,7 +8,6 @@ const LOOPS: u64 = 100;
 
 fn connect() -> Client {
     env_logger::try_init().expect("Could not initialize logging");
-
     memcached::connect("memcache://127.0.0.1:12345").expect("Could not connect to memcached")
 }
 
